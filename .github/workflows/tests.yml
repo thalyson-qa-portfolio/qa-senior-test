@@ -55,8 +55,16 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: npm run test:e2e 2>&1 | tee cucumber-output.txt
         continue-on-error: true
+
+      - name: E2E Test Summary
+        if: always()
+        run: |
+          echo "## E2E Tests Results" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -5 cucumber-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload E2E test report
         uses: actions/upload-artifact@v4
