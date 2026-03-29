@@ -5,7 +5,9 @@
   "scripts": {
     "test:api": "npx playwright test",
     "test:e2e": "npx cucumber-js",
-    "test": "npm run test:api && npm run test:e2e"
+    "test": "npm run test:api && npm run test:e2e",
+    "test:perf": "k6 run performance/load-test.js",
+    "test:perf:smoke": "k6 run --vus 10 --duration 30s performance/load-test.js"
   },
   "keywords": [],
   "author": "",

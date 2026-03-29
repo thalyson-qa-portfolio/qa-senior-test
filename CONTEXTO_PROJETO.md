@@ -1,145 +1,119 @@
-# Contexto do Projeto - QA Senior Test
+# Guia do avaliador — como as atividades do desafio foram resolvidas
 
-## Objetivo
-Projeto de teste técnico para vaga de **QA Sênior** cobrindo:
-- Testes de API (Playwright)
-- Testes E2E (Playwright + Cucumber + TypeScript)
-- Pipeline CI/CD (GitHub Actions)
-- Teste de Performance (K6)
+Este documento **não substitui** o [README.md](README.md) nem a pasta [docs/](docs/); serve para o avaliador **localizar rapidamente** o que foi pedido no teste técnico, **onde está implementado** e **quais decisões** foram tomadas.
 
 ---
 
-## Decisões Técnicas Tomadas
+## Visão geral da entrega
 
-### Stack Definida
-| Tecnologia | Uso |
-|------------|-----|
-| Playwright | Testes E2E e API |
-| TypeScript | Linguagem principal |
-| Cucumber | BDD com Gherkin |
-| GitHub Actions | CI/CD |
-| K6 | Testes de performance |
+| Área | Ferramenta | Onde está | Comando local |
+|------|------------|-----------|---------------|
+| API | Playwright Test | [tests/api/booking.spec.ts](tests/api/booking.spec.ts) | `npm run test:api` |
+| E2E | Cucumber + Playwright | [e2e/](e2e/) | `npm run test:e2e` |
+| CI/CD | GitHub Actions | [.github/workflows/tests.yml](.github/workflows/tests.yml) | (automático no push/PR) |
+| Performance | K6 | [performance/load-test.js](performance/load-test.js) | `npm run test:perf` (carga completa) / `npm run test:perf:smoke` (smoke) |
 
-### Aplicações de Teste
-| Tipo | Site | URL |
-|------|------|-----|
-| **E2E** | Automation Exercise | https://automationexercise.com |
-| **API** | Restful-Booker | https://restful-booker.herokuapp.com |
-| **K6** | Restful-Booker | https://restful-booker.herokuapp.com |
-
-### Por que essas escolhas?
-- **Automation Exercise**: Cobre 100% dos requisitos E2E (login, carrinho, checkout com cartão)
-- **Restful-Booker**: API REST completa com autenticação, CRUD, cenários negativos
+Documentação técnica detalhada: [docs/API_TESTS.md](docs/API_TESTS.md), [docs/E2E_TESTS.md](docs/E2E_TESTS.md), [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md).
 
 ---
 
-## Fases do Projeto
+## 1. Testes de API
 
-| Fase | Descrição | Status |
-|------|-----------|--------|
-| FASE 1 | Setup inicial do projeto | ✅ Concluído |
-| FASE 2 | Base mínima para testes de API | ✅ Concluído |
-| FASE 3 | Expansão dos testes de API | ✅ Concluído |
-| FASE 4 | Base mínima para E2E com Cucumber | ✅ Concluído |
-| FASE 5 | Expansão dos testes E2E | ✅ Concluído |
-| FASE 6 | Pipeline com GitHub Actions | ✅ Concluído |
-| FASE 7 | Performance com K6 | ⏳ Pendente |
-| FASE 8 | README e acabamento final | ⏳ Pendente |
+### O que o desafio pedia (em síntese)
+Validação de status, corpo e fluxos REST (incluindo negativos), métodos GET/POST/PUT/DELETE, autenticação, relatório.
+
+### Como foi resolvido
+- **Arquivo único da suíte:** [tests/api/booking.spec.ts](tests/api/booking.spec.ts) — cenários agrupados por `test.describe` (fluxo feliz, negativos de payload, negativos de autenticação/autorização).
+- **Base URL:** definida em [e2e/support/config.ts](e2e/support/config.ts) como `API_BASE_URL` e referenciada no [playwright.config.ts](playwright.config.ts) (`baseURL`).
+- **Relatório HTML:** gerado em `test-output/playwright-report/` (configuração do reporter em `playwright.config.ts`). Artefatos de falha da API em `test-output/test-results/` (`outputDir`).
+- **Credenciais inválidas em `POST /auth`:** a Restful-Booker responde **HTTP 200** com corpo do tipo `{"reason":"Bad credentials"}` (sem token), e não **401**. O teste foi alinhado a esse **comportamento real da API**: valida status 200, `reason` e ausência de `token`, em vez de exigir 401 (que quebraria a suíte sem refletir o serviço público em produção).
+
+### Onde aprofundar
+[docs/API_TESTS.md](docs/API_TESTS.md) — estrutura dos testes, como abrir o relatório, convenções.
 
 ---
 
-## FASE 1 - Progresso Detalhado
+## 2. Testes E2E (Cucumber + Page Objects)
 
-### Etapas da FASE 1
-| Etapa | Descrição | Status |
-|-------|-----------|--------|
-| 1.1 | Criar projeto e estrutura de pastas | ✅ Concluído |
-| 1.2 | Instalar dependências | ✅ Concluído |
-| 1.3 | Criar tsconfig.json | ✅ Concluído |
-| 1.4 | Criar playwright.config.ts | ✅ Concluído |
-| 1.5 | Criar cucumber.js | ✅ Concluído |
-| 1.6 | Criar .env.example e .gitignore | ✅ Concluído |
-| 1.7 | Atualizar package.json com scripts | ✅ Concluído |
-| 1.8 | Criar README.md inicial | ✅ Concluído |
+### O que o desafio pedia (em síntese)
+Login (positivo/negativo), navegação, checkout (incluindo negativos), BDD com Gherkin, Page Object, relatório com evidências.
 
-### Estrutura de Pastas Criada
+### Como foi resolvido
+- **Features:** [e2e/features/](e2e/features/) — `login.feature`, `checkout.feature`, `navegacao.feature`.
+- **Step definitions:** [e2e/steps/](e2e/steps/) — amarram Gherkin ao Playwright.
+- **Page Objects:** [e2e/pages/](e2e/pages/) — `LoginPage`, `CheckoutPage`, `ProductsPage` (locators e ações encapsulados).
+- **Hooks e browser:** [e2e/support/hooks.ts](e2e/support/hooks.ts) — browser Chromium, trace em falha, screenshots; pastas sob `test-output/` (screenshots, traces, videos, relatório Cucumber).
+- **Configuração Cucumber:** [cucumber.js](cucumber.js) — `paths` e `require` apontando para `e2e/`.
+- **Ajuste de estabilidade:** subcategorias na página de produtos podem ter mais de um link com o mesmo texto no DOM; o clique usa o **primeiro link visível** (ver `ProductsPage.clickSubcategory`) para evitar falha intermitente.
+
+### Evidências e relatório
+- HTML Cucumber: `test-output/reports/cucumber-report.html`
+- Traces / screenshots / vídeos: `test-output/traces`, `test-output/screenshots`, `test-output/videos` (conforme hooks e `VIDEO=true`).
+
+### Onde aprofundar
+[docs/E2E_TESTS.md](docs/E2E_TESTS.md).
+
+---
+
+## 3. CI/CD (GitHub Actions)
+
+### O que o desafio pedia (em síntese)
+Pipeline que execute testes após commits, com visibilidade dos resultados.
+
+### Como foi resolvido
+- **Workflow:** [.github/workflows/tests.yml](.github/workflows/tests.yml).
+- **Triggers:** push em qualquer branch; pull request para `main`.
+- **Três jobs em paralelo:**
+  1. **api-tests** — `npm ci`, `npm run test:api`, upload do artifact **api-report** (`test-output/playwright-report/`).
+  2. **e2e-tests** — `npm ci`, Playwright Chromium, `npm run test:e2e`, artifact **e2e-report** (HTML Cucumber, traces, screenshots, videos).
+  3. **performance-tests** — instalação do K6 (`grafana/setup-k6-action`), `npm run test:perf:smoke` (10 VUs, 30 s) para validar o script em CI sem o custo da carga completa.
+- **Job Summary (painel da execução):** [.github/scripts/render-job-summary.sh](.github/scripts/render-job-summary.sh) — gera Markdown padronizado (tabela com status **Passed/Failed** a partir do exit code real do teste, resumo filtrado do log, bloco expansível com final do log). Os steps de teste usam `continue-on-error: true` para **ainda assim** publicar relatórios e summary quando houver falha; o summary indica claramente se a suíte passou ou não.
+- **Artifacts:** baixáveis na aba **Actions** da execução (instruções no README, seção CI/CD).
+
+---
+
+## 4. Testes de performance (K6)
+
+### O que o desafio pedia (em síntese)
+Carga elevada (ex.: 500 usuários sustentados), métricas, análise e relatório.
+
+### Como foi resolvido
+- **Script:** [performance/load-test.js](performance/load-test.js) — `stages` com ramp-up, **5 minutos** em 500 VUs e ramp-down; checks e thresholds; métricas customizadas (`Rate`, `Trend`); bloco textual de resumo ao final da execução.
+- **Alvo:** **https://test.k6.io** — API/site mantidos pelo projeto K6 para testes de carga, evitando sobrecarregar a Restful-Booker e reduzindo flakiness sob muitos VUs.
+- **Relatório / análise:** descritos em [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md) (inclui exemplo de export JSON e leitura de métricas).
+- **CI vs local:** no GitHub roda apenas o **smoke** (`test:perf:smoke`); a prova do requisito de **500 VUs × 5 min** fica documentada no script e na doc, executável localmente com `npm run test:perf`.
+
+---
+
+## 5. Decisões de estrutura e configuração
+
+| Decisão | Motivo |
+|---------|--------|
+| Suíte E2E sob `e2e/` | Separação clara de features, steps, pages e support; `cucumber.js` centralizado na raiz. |
+| URLs em `e2e/support/config.ts` | Um arquivo para `API_BASE_URL` e `E2E_BASE_URL`; Playwright de API importa o mesmo módulo. |
+| Saídas em `test-output/` (gitignored) | Relatórios e evidências não versionados; caminhos alinhados entre Playwright, Cucumber e hooks. |
+| `.env.example` | Documenta variáveis usadas pelos hooks E2E (`HEADLESS`, `SLOWMO`, `VIDEO`); o projeto **não** carrega `.env` automaticamente (ver comentários no arquivo). |
+
+---
+
+## 6. Como reproduzir localmente (checklist rápido)
+
+```bash
+npm install
+npx playwright install chromium   # necessário para E2E
+npm run test:api
+npm run test:e2e
+# opcional: K6 instalado
+npm run test:perf:smoke           # rápido
+npm run test:perf                 # carga completa (~7 min)
 ```
-qa-senior-test/
-├── .github/workflows/  # Pipeline CI/CD (FASE 6)
-├── features/           # Arquivos .feature (FASE 4)
-├── pages/              # Page Objects (FASE 4-5)
-├── steps/              # Step definitions (FASE 4)
-├── support/            # Hooks Cucumber (FASE 4)
-├── tests/api/          # Testes de API (FASE 2-3)
-├── performance/        # Scripts K6 (FASE 7)
-├── utils/              # Helpers
-└── package.json        # ✅ Criado
-```
 
 ---
 
-## Próximo Passo: FASE 4
+## 7. Status das fases internas do projeto
 
-### Objetivo da FASE 4
-Criar a base mínima para testes E2E com Cucumber no site Automation Exercise.
-
-### Etapas previstas:
-| Etapa | Descrição |
-|-------|-----------|
-| 4.1 | Criar primeiro arquivo .feature (login) |
-| 4.2 | Criar step definitions |
-| 4.3 | Criar Page Object para login |
-| 4.4 | Configurar hooks do Cucumber |
-| 4.5 | Validar que os testes rodam com `npm run test:e2e` |
+Todas as frentes planejadas (setup, API, E2E, CI, performance, documentação principal) foram concluídas para fins deste desafio. Ajustes finos de portfólio continuam no README e nos `docs/` conforme necessário.
 
 ---
 
-## Requisitos do Teste Técnico (Resumo)
-
-### 1. Testes de API
-- Validar status codes, headers, body
-- Testes positivos e negativos
-- Métodos: GET, POST, PUT, DELETE
-- Cenários: payloads malformados, autenticação inválida
-- Gerar relatório
-
-### 2. Testes E2E (Cucumber)
-- Login (positivo e negativo)
-- Navegação
-- Checkout completo (carrinho, dados de pagamento, finalização)
-- Cenários negativos (cartão inválido, campos obrigatórios)
-- Page Object Pattern
-- Gerar relatório com evidências
-
-### 3. CI/CD
-- Pipeline GitHub Actions
-- Executar testes de API e E2E após cada commit
-- Relatório das execuções
-
-### 4. Performance (K6)
-- 500 usuários simultâneos por 5 minutos
-- Métricas e identificação de gargalos
-- Relatório de análise
-
----
-
-## Regras de Condução
-
-1. **Passos pequenos** - Não implementar grandes blocos de uma vez
-2. **Explicar antes** - Sempre explicar o que será feito
-3. **Explicar depois** - Detalhar o código linha por linha quando necessário
-4. **Aguardar confirmação** - Esperar aprovação antes de avançar
-5. **Sem abstrações prematuras** - Manter simples até precisar de mais
-6. **Zero retrabalho** - Fazer certo da primeira vez
-
----
-
-## Como Continuar
-
-Ao abrir este projeto em um novo chat, diga:
-
-> "Leia o arquivo CONTEXTO_PROJETO.md e continue de onde paramos. Estou na FASE 4 (testes E2E com Cucumber)."
-
----
-
-*Arquivo gerado em: Março 2026*
+*Documento voltado ao avaliador — Março 2026*

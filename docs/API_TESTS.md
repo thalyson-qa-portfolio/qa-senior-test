@@ -37,16 +37,16 @@ Este documento descreve a implementação dos testes automatizados de API para o
 
 **Como foi resolvido:**
 
-| Método HTTP | Endpoint | Teste Positivo | Teste Negativo |
-|-------------|----------|----------------|----------------|
-| GET | `/booking` | Lista reservas | - |
-| GET | `/booking/{id}` | Busca específica | ID inexistente (404) |
-| POST | `/auth` | Gera token | Credenciais inválidas (401) |
-| POST | `/booking` | Cria reserva | Campos ausentes (500) |
-| PUT | `/booking/{id}` | Atualiza reserva | Sem token (403) |
-| DELETE | `/booking/{id}` | Remove reserva | Sem ID |
+| Método HTTP |     Endpoint   | Teste Positivo   |    Teste Negativo           |
+|-------------|----------------|------------------|-----------------------------|
+|     GET     | `/booking`     | Lista reservas   | -                           |
+|     GET     | `/booking/{id}`| Busca específica | ID inexistente (404)        |
+|     POST    | `/auth`        | Gera token       | Credenciais inválidas (401) |
+|     POST    | `/booking`     | Cria reserva     | Campos ausentes (500)       |
+|     PUT     | `/booking/{id}`| Atualiza reserva | Sem token (403)             |
+|    DELETE   | `/booking/{id}`| Remove reserva   | Sem ID                      |
 
-**Relatório:** Gerado automaticamente pelo Playwright em `playwright-report/`.
+**Relatório:** Gerado automaticamente pelo Playwright em `test-output/playwright-report/`.
 
 ---
 
@@ -330,7 +330,7 @@ npm run test:api
 ### Ver Relatório
 
 ```bash
-npx playwright show-report
+npx playwright show-report test-output/playwright-report
 ```
 
 ---

@@ -150,14 +150,16 @@ test.describe('DELETE /booking/{id}', () => {
 });
 
 test.describe('Testes negativos - Autenticação', () => {
-  // BUG: API retorna 200 com body {"reason":"Bad credentials"} em vez de 401
-  // Teste falha propositalmente para documentar o bug no report
-  test('POST /auth deve retornar 401 para credenciais inválidas', async ({ request }) => {
+  // A API Restful-Booker responde 200 com {"reason":"Bad credentials"} (sem token), não 401 RFC.
+  test('POST /auth deve rejeitar credenciais inválidas', async ({ request }) => {
     const response = await request.post('/auth', {
       data: { username: 'invalido', password: 'errado' },
     });
 
-    expect(response.status()).toBe(401);
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body).toHaveProperty('reason', 'Bad credentials');
+    expect(body).not.toHaveProperty('token');
   });
 
   test('PUT /booking/{id} deve falhar sem token', async ({ request }) => {

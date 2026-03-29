@@ -29,7 +29,7 @@ Este documento descreve a implementação dos testes automatizados E2E (End-to-E
 | Login válido | Cenário "Login com credenciais válidas" | `login.feature` |
 | Senha incorreta | Cenário "Login com credenciais inválidas" | `login.feature` |
 | Campos em branco | Cenário "Login com campos vazios" | `login.feature` |
-| Page Object Pattern | `LoginPage`, `CheckoutPage`, `ProductsPage` | `pages/` |
+| Page Object Pattern | `LoginPage`, `CheckoutPage`, `ProductsPage` | `e2e/pages/` |
 
 ---
 
@@ -54,7 +54,7 @@ Este documento descreve a implementação dos testes automatizados E2E (End-to-E
 | Cartão inválido | Cenário "Checkout com número de cartão inválido" | `checkout.feature` |
 | Campos vazios | Cenário "Checkout com campos de pagamento vazios" | `checkout.feature` |
 | Endereço incompleto | Cenário "Cadastro sem preencher endereço" | `login.feature` |
-| Relatório | Cucumber HTML Report + Playwright Traces | `reports/`, `traces/` |
+| Relatório | Cucumber HTML Report + Playwright Traces | `test-output/reports/`, `test-output/traces/` |
 
 ---
 
@@ -62,22 +62,23 @@ Este documento descreve a implementação dos testes automatizados E2E (End-to-E
 
 ```
 qa-senior-test/
-├── features/                    # Arquivos Gherkin (.feature)
-│   ├── login.feature           # Cenários de login e cadastro
-│   ├── checkout.feature        # Cenários de checkout
-│   └── navegacao.feature       # Cenários de navegação
-├── steps/                       # Step Definitions
-│   ├── login.steps.ts          # Steps de login
-│   ├── checkout.steps.ts       # Steps de checkout
-│   └── navegacao.steps.ts      # Steps de navegação
-├── pages/                       # Page Objects
-│   ├── LoginPage.ts            # Page Object de Login
-│   ├── CheckoutPage.ts         # Page Object de Checkout
-│   └── ProductsPage.ts         # Page Object de Produtos
-├── support/                     # Configurações
-│   ├── config.ts               # URL base e constantes
-│   └── hooks.ts                # Hooks do Cucumber (Before/After)
-└── reports/                     # Relatórios gerados
+├── e2e/                         # Suite E2E (isolada do Playwright API)
+│   ├── features/                # Arquivos Gherkin (.feature)
+│   │   ├── login.feature
+│   │   ├── checkout.feature
+│   │   └── navegacao.feature
+│   ├── steps/                   # Step Definitions
+│   │   ├── login.steps.ts
+│   │   ├── checkout.steps.ts
+│   │   └── navegacao.steps.ts
+│   ├── pages/                   # Page Objects
+│   │   ├── LoginPage.ts
+│   │   ├── CheckoutPage.ts
+│   │   └── ProductsPage.ts
+│   └── support/
+│       ├── config.ts            # URL base E2E e constantes
+│       └── hooks.ts             # Hooks do Cucumber (Before/After)
+└── test-output/                 # Relatórios e evidências (gerados)
 ```
 
 ---
@@ -241,7 +242,7 @@ Before(async () => {
 After(async (scenario) => {
   // Salva trace para análise
   await context.tracing.stop({ 
-    path: `traces/${scenario.pickle.name}.zip` 
+    path: `test-output/traces/${scenario.pickle.name}.zip` 
   });
   await page.close();
 });
@@ -253,8 +254,8 @@ AfterAll(async () => {
 
 **Recursos de debugging:**
 - `HEADLESS=false` - Ver browser executando
-- `traces/` - Playwright Trace Viewer
-- `screenshots/` - Screenshots em falhas
+- `test-output/traces/` - Playwright Trace Viewer
+- `test-output/screenshots/` - Screenshots em falhas
 
 ---
 
@@ -287,7 +288,7 @@ async createAccountViaAPI(email: string, password: string) {
 ### 7. Configuração Centralizada
 
 ```typescript
-// support/config.ts
+// e2e/support/config.ts
 export const BASE_URL = 'https://automationexercise.com';
 ```
 
@@ -355,10 +356,10 @@ SLOWMO=500 npm run test:e2e
 
 ```bash
 # Relatório Cucumber HTML
-open reports/cucumber-report.html
+open test-output/reports/cucumber-report.html
 
 # Trace Viewer (análise detalhada)
-npx playwright show-trace traces/Login_com_credenciais_válidas.zip
+npx playwright show-trace test-output/traces/Login_com_credenciais_validas.zip
 ```
 
 ---

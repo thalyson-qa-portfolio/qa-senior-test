@@ -1,9 +1,9 @@
 module.exports = {
   default: {
-    require: ['steps/**/*.ts', 'support/**/*.ts'],
+    require: ['e2e/steps/**/*.ts', 'e2e/support/**/*.ts'],
     requireModule: ['ts-node/register'],
-    paths: ['features/**/*.feature'],
-    format: ['progress', 'html:reports/cucumber-report.html'],
+    paths: ['e2e/features/**/*.feature'],
+    format: ['progress', 'html:test-output/reports/cucumber-report.html'],
     timeout: 60000,
   },
 };

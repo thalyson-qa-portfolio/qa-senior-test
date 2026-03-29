@@ -13,37 +13,56 @@ Projeto de automação de testes desenvolvido como avaliação técnica para vag
 | Playwright | 1.58.2 | Testes de API e automação de browser |
 | Cucumber | 11.3.0 | Framework BDD (Gherkin) |
 | ts-node | 10.9.2 | Execução de TypeScript |
+| K6 | 1.4+ (instalação separada) | Testes de carga / performance |
 
 ---
 
 ## Estrutura do Projeto
+
+O repositório agrupa **três suítes** com pastas claras:
+
+| Suíte | Pasta principal | Ferramenta |
+|-------|-----------------|-------------|
+| API | `tests/api/` | Playwright Test |
+| E2E | `e2e/` | Cucumber + Playwright |
+| Performance | `performance/` | K6 |
+
+Configurações compartilhadas entre API (Playwright) e E2E ficam em `e2e/support/config.ts` (URLs `API_BASE_URL` e `E2E_BASE_URL`).
 
 ```
 qa-senior-test/
 ├── tests/
 │   └── api/
 │       └── booking.spec.ts      # Testes de API (Restful-Booker)
-├── features/
-│   ├── login.feature            # Cenários de login e cadastro
-│   ├── checkout.feature         # Cenários de checkout
-│   └── navegacao.feature        # Cenários de navegação
-├── steps/
-│   ├── login.steps.ts           # Step definitions de login
-│   ├── checkout.steps.ts        # Step definitions de checkout
-│   └── navegacao.steps.ts       # Step definitions de navegação
-├── pages/
-│   ├── LoginPage.ts             # Page Object de Login
-│   ├── CheckoutPage.ts          # Page Object de Checkout
-│   └── ProductsPage.ts          # Page Object de Produtos
-├── support/
-│   ├── config.ts                # Configurações (URL base)
-│   └── hooks.ts                 # Hooks do Cucumber (Before/After)
+├── e2e/                         # Suite E2E (Cucumber + Playwright)
+│   ├── features/
+│   │   ├── login.feature
+│   │   ├── checkout.feature
+│   │   └── navegacao.feature
+│   ├── steps/
+│   │   ├── login.steps.ts
+│   │   ├── checkout.steps.ts
+│   │   └── navegacao.steps.ts
+│   ├── pages/
+│   │   ├── LoginPage.ts
+│   │   ├── CheckoutPage.ts
+│   │   └── ProductsPage.ts
+│   └── support/
+│       ├── config.ts            # URLs (API + E2E)
+│       └── hooks.ts             # Hooks Cucumber (Before/After)
 ├── docs/
 │   ├── API_TESTS.md             # Documentação dos testes de API
-│   └── E2E_TESTS.md             # Documentação dos testes E2E
-├── playwright-report/           # Relatório HTML dos testes de API
-├── reports/                     # Relatório HTML dos testes E2E
-├── traces/                      # Traces do Playwright (debugging)
+│   ├── E2E_TESTS.md             # Documentação dos testes E2E
+│   └── PERFORMANCE_TESTS.md     # Documentação dos testes de carga (K6)
+├── performance/
+│   └── load-test.js             # Script K6 (500 VUs, 5 min de carga)
+├── test-output/                 # Saidas geradas (gitignored)
+│   ├── playwright-report/     # Relatorio HTML API (Playwright)
+│   ├── test-results/          # Artefatos de falha API (Playwright)
+│   ├── reports/               # Relatorio HTML E2E (Cucumber)
+│   ├── screenshots/           # Falhas E2E
+│   ├── traces/                # Trace Viewer E2E
+│   └── videos/                # VIDEO=true
 ├── playwright.config.ts         # Configuração do Playwright
 ├── cucumber.js                  # Configuração do Cucumber
 └── tsconfig.json                # Configuração do TypeScript
@@ -55,6 +74,7 @@ qa-senior-test/
 
 - **Node.js** 18 ou superior
 - **npm** (incluso com Node.js)
+- **K6** 1.x (apenas para `npm run test:perf`; ver secao Instalacao, passo 4)
 
 Verificar versão instalada:
 ```bash
@@ -80,6 +100,12 @@ npm install
 3. Instale os browsers do Playwright:
 ```bash
 npx playwright install chromium
+```
+
+4. (Opcional) Para testes de carga, instale o [K6](https://k6.io/docs/get-started/installation/):
+```bash
+brew install k6   # macOS
+k6 version
 ```
 
 ---
@@ -141,13 +167,29 @@ Executa testes E2E com Cucumber no site [Automation Exercise](https://automation
 - Checkout completo
 - Validação de campos obrigatórios
 
+### Testes de performance (K6)
+
+```bash
+npm run test:perf
+```
+
+Executa carga com **500 usuarios virtuais** (ramp-up 1 min, **5 min** em plataforma, ramp-down 1 min) contra **https://test.k6.io** (API publica recomendada para testes de carga).
+
+Smoke rapido (validacao local, ~30 s):
+
+```bash
+npm run test:perf:smoke
+```
+
+**Documentacao:** [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md)
+
 ### Todos os Testes
 
 ```bash
 npm test
 ```
 
-Executa testes de API e E2E sequencialmente.
+Executa testes de API e E2E sequencialmente (nao inclui K6).
 
 ---
 
@@ -180,24 +222,34 @@ VIDEO=true npm run test:e2e
 Após executar `npm run test:api`:
 
 ```bash
-npx playwright show-report
+npx playwright show-report test-output/playwright-report
 ```
 
-O relatório HTML é gerado em `playwright-report/`.
+O relatório HTML é gerado em `test-output/playwright-report/`.
 
 ### Relatório E2E (Cucumber)
 
 Após executar `npm run test:e2e`:
 
-O relatório HTML é gerado em `reports/cucumber-report.html`.
+O relatório HTML é gerado em `test-output/reports/cucumber-report.html`.
 
 ### Trace Viewer (Debugging E2E)
 
 Para análise detalhada de cenários E2E:
 
 ```bash
-npx playwright show-trace traces/<nome-do-cenario>.zip
+npx playwright show-trace test-output/traces/<nome-do-cenario>.zip
 ```
+
+### Relatorio de carga (K6)
+
+O K6 imprime um resumo no terminal ao final de `npm run test:perf`. Para exportar JSON:
+
+```bash
+k6 run --out json=performance/k6-results.json performance/load-test.js
+```
+
+Detalhes e analise de uma execucao de referencia: [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md).
 
 ---
 
@@ -216,6 +268,9 @@ O projeto inclui pipeline de integracao continua que executa automaticamente:
 |-----|-----------|---------|
 | `api-tests` | Executa testes de API | ~1 min |
 | `e2e-tests` | Executa testes E2E com Chromium | ~2-3 min |
+| `performance-tests` | K6 smoke (`npm run test:perf:smoke`, 10 VUs / 30s) | ~1 min |
+
+A carga completa (500 VUs, varios minutos) continua apenas localmente via `npm run test:perf`; o CI valida o script e o alvo com execucao leve.
 
 ### Artifacts (Relatorios)
 
@@ -223,8 +278,8 @@ Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub
 
 | Artifact | Conteudo |
 |----------|----------|
-| `api-report` | Relatorio HTML do Playwright |
-| `e2e-report` | Relatorio Cucumber + Traces |
+| `api-report` | `test-output/playwright-report/` |
+| `e2e-report` | `test-output/reports/`, traces, screenshots, videos |
 
 **Como acessar:**
 1. Va para a aba "Actions" no GitHub
@@ -246,7 +301,7 @@ Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub
 | Positivo | GET /booking/{id} - Busca específica | Passa |
 | Positivo | PUT /booking/{id} - Atualiza reserva | Passa |
 | Positivo | DELETE /booking/{id} - Remove reserva | Passa |
-| Negativo | POST /auth - Credenciais inválidas | Falha (bug documentado) |
+| Negativo | POST /auth - Credenciais inválidas | Passa (contrato real: 200 + `Bad credentials`, sem token) |
 | Negativo | PUT sem token | Passa |
 | Negativo | POST sem campos obrigatórios | Passa |
 | Negativo | GET ID inexistente | Passa |
@@ -273,8 +328,10 @@ Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub
 
 Para explicações técnicas completas, consulte:
 
+- [Guia do avaliador — como as atividades foram resolvidas](CONTEXTO_PROJETO.md)
 - [Documentação de Testes de API](docs/API_TESTS.md)
 - [Documentação de Testes E2E](docs/E2E_TESTS.md)
+- [Documentação de Testes de Performance (K6)](docs/PERFORMANCE_TESTS.md)
 
 ---
 

@@ -24,23 +24,22 @@ jobs:
         run: npm ci
 
       - name: Run API tests
-        run: npm run test:api 2>&1 | tee playwright-output.txt
+        run: |
+          set -o pipefail
+          npm run test:api 2>&1 | tee playwright-output.txt
+          echo ${PIPESTATUS[0]} > .job-exit-code
         continue-on-error: true
 
       - name: API Test Summary
         if: always()
-        run: |
-          echo "## API Tests Results" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -5 playwright-output.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+        run: bash .github/scripts/render-job-summary.sh api playwright-output.txt
 
       - name: Upload API test report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: api-report
-          path: playwright-report/
+          path: test-output/playwright-report/
           retention-days: 30
 
   e2e-tests:
@@ -63,16 +62,15 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
-        run: npm run test:e2e 2>&1 | tee cucumber-output.txt
+        run: |
+          set -o pipefail
+          npm run test:e2e 2>&1 | tee cucumber-output.txt
+          echo ${PIPESTATUS[0]} > .job-exit-code
         continue-on-error: true
 
       - name: E2E Test Summary
         if: always()
-        run: |
-          echo "## E2E Tests Results" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -5 cucumber-output.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+        run: bash .github/scripts/render-job-summary.sh e2e cucumber-output.txt
 
       - name: Upload E2E test report
         uses: actions/upload-artifact@v4
@@ -80,6 +78,29 @@ jobs:
         with:
           name: e2e-report
           path: |
-            reports/
-            traces/
+            test-output/reports/
+            test-output/traces/
+            test-output/screenshots/
+            test-output/videos/
           retention-days: 30
+
+  performance-tests:
+    name: Performance Tests (K6 smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup K6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run K6 smoke test
+        run: |
+          set -o pipefail
+          npm run test:perf:smoke 2>&1 | tee k6-output.txt
+          echo ${PIPESTATUS[0]} > .job-exit-code
+        continue-on-error: true
+
+      - name: Performance Test Summary
+        if: always()
+        run: bash .github/scripts/render-job-summary.sh k6 k6-output.txt

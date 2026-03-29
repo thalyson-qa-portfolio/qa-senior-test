@@ -26,7 +26,16 @@ export class ProductsPage {
   }
 
   async clickSubcategory(subcategory: string) {
-    await this.page.click(`a:has-text("${subcategory}")`);
+    const links = this.page.locator(`a:has-text("${subcategory}")`);
+    const n = await links.count();
+    for (let i = 0; i < n; i++) {
+      const link = links.nth(i);
+      if (await link.isVisible()) {
+        await link.click();
+        return;
+      }
+    }
+    throw new Error(`Nenhum link visivel para subcategoria: ${subcategory}`);
   }
 
   async search(term: string) {
