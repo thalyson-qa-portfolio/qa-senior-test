@@ -31,24 +31,28 @@ if [ "$TYPE" = "api" ]; then
   if [ -f "$PW_JSON" ] && command -v jq >/dev/null 2>&1; then
     jq -r '
       .stats | . as $s
-      | ($s.expected + $s.unexpected + $s.flaky + $s.skipped) as $total
-      | ($s.expected + $s.unexpected + $s.flaky) as $den
-      | (if $den > 0
-         then ((($s.expected + $s.flaky) * 10000 / $den) | round / 100)
+      | ($s.expected + $s.unexpected) as $total
+      | (if $total > 0
+         then (($s.expected * 10000 / $total) | round / 100)
          else 0 end) as $pr
       | "### Metricas",
         "",
-        "| Metrica | Valor |",
-        "|:---|---:|",
-        ("| Total de testes | \($total) |"),
-        ("| Passaram | \($s.expected) |"),
-        ("| Falharam | \($s.unexpected) |"),
-        ("| Flaky | \($s.flaky) |"),
-        ("| Pulados | \($s.skipped) |"),
-        ("| Duracao (ms) | \($s.duration | floor) |"),
-        ("| Pass rate (%) | \($pr) |"),
+        "| Total | Passaram | Falharam | Duracao (ms) | Pass rate (%) |",
+        "|:---|---:|---:|---:|---:|",
+        ("| \($total) | \($s.expected) | \($s.unexpected) | \($s.duration | floor) | \($pr) |"),
         ""
     ' "$PW_JSON" >> "$SUMMARY"
+
+    append "### Por grupo e teste"
+    append ""
+    append "| Grupo (describe) | Teste | Resultado |"
+    append "|:---|:---|:---|"
+    jq -r '
+      .. | objects | select(has("specs") and (.specs | length > 0))
+      | .title as $g | .specs[]
+      | "| \($g | gsub("[|]"; "/")) | \(.title | gsub("[|]"; "/")) | \(if .ok then "passed" else "failed" end) |"
+    ' "$PW_JSON" >> "$SUMMARY"
+    append ""
   else
     append "### Metricas (fallback: log)"
     append ""
@@ -87,13 +91,9 @@ elif [ "$TYPE" = "e2e" ]; then
       | (if $tot > 0 then (($ok * 10000 / $tot) | round / 100) else 0 end) as $pr
       | "### Resumo geral",
         "",
-        "| Metrica | Valor |",
-        "|:---|---:|",
-        ("| Cenarios Gherkin | \($tot) |"),
-        ("| Passaram | \($ok) |"),
-        ("| Falharam | \($bad) |"),
-        ("| Pass rate (%) | \($pr) |"),
-        ("| Tempo (log Cucumber) | \($t) |"),
+        "| Cenarios | Passaram | Falharam | Pass rate (%) | Tempo (log) |",
+        "|:---:|:---:|:---:|:---:|:---:|",
+        ("| \($tot) | \($ok) | \($bad) | \($pr) | \($t) |"),
         ""
     ' "$CU_JSON" >> "$SUMMARY"
 
@@ -111,13 +111,29 @@ elif [ "$TYPE" = "e2e" ]; then
     ' "$CU_JSON" >> "$SUMMARY"
     append ""
 
-    STEPS_OK="$(jq '[.[] | (.elements // [])[] | .steps[]? | select(.result.status == "passed")] | length' "$CU_JSON" 2>/dev/null || echo 0)"
-    STEPS_ALL="$(jq '[.[] | (.elements // [])[] | .steps[]?] | length' "$CU_JSON" 2>/dev/null || echo 0)"
-    append "### Steps"
+    append "### Falhas (cenario, step e log)"
     append ""
-    append "| Metrica | Valor |"
-    append "|:---|---:|"
-    append "| Steps passed / total | ${STEPS_OK} / ${STEPS_ALL} |"
+    FAIL_ROWS="$(jq -r '
+      .[] | .name as $feature
+      | (.elements // [])[]
+      | select((.keyword // "") | test("Scenario"))
+      | .name as $scenario
+      | (.steps // [])[]
+      | select((.result.status // "") == "failed")
+      | (
+          ((.keyword // "") + (.name // "")) as $step
+          | ((.result.error_message // .result.message // "(sem error_message no JSON)") | gsub("\n"; " ")) as $log
+          | ($log | if length > 1500 then .[0:1500] + "..." else . end) as $log2
+          | "| \($feature | gsub("\\|"; "/")) | \($scenario | gsub("\\|"; "/")) | \($step | gsub("\\|"; "/")) | \($log2 | gsub("\\|"; "/")) |"
+        )
+    ' "$CU_JSON" 2>/dev/null || true)"
+    if [ -n "$FAIL_ROWS" ]; then
+      append "| Feature | Cenario | Step | Log |"
+      append "|:---|:---|:---|:---|"
+      printf '%s\n' "$FAIL_ROWS" >> "$SUMMARY"
+    else
+      append "_Nenhum step com status failed no JSON._"
+    fi
     append ""
   else
     append "### Metricas (fallback: log)"
@@ -153,21 +169,10 @@ elif [ "$TYPE" = "k6" ]; then
     append '```'
   fi
   append ""
-  REQ="$(grep -oE 'Total de Requests:[[:space:]]*[0-9]+' "$LOG" 2>/dev/null | grep -oE '[0-9]+' | head -1 || echo "?")"
-  FAILRATE="$(grep -oE 'Taxa de Falha:[[:space:]]*[0-9.]+%' "$LOG" 2>/dev/null | head -1 || echo "?")"
-  P95="$(grep -oE 'P95:[[:space:]]*[0-9.]+ms' "$LOG" 2>/dev/null | head -1 || echo "?")"
-  append "### Resumo numerico"
-  append ""
-  append "| Metrica | Valor |"
-  append "|:---|:---|"
-  append "| Total de requests | ${REQ} |"
-  append "| Taxa de falha | ${FAILRATE} |"
-  append "| P95 | ${P95} |"
-  append ""
-  append "<details><summary>Log completo (final)</summary>"
+  append "<details><summary>Log completo</summary>"
   append ""
   append '```text'
-  tail -100 "$LOG" 2>/dev/null >> "$SUMMARY" || true
+  cat "$LOG" 2>/dev/null >> "$SUMMARY" || true
   append '```'
   append "</details>"
 else
