@@ -296,14 +296,16 @@ Durante os testes, foi identificado um bug na API:
 
 ```typescript
 // BUG: API retorna 200 com body {"reason":"Bad credentials"} em vez de 401
-test('POST /auth deve retornar 401 para credenciais inválidas', async ({ request }) => {
+test('POST /auth deve rejeitar credenciais inválidas', async ({ request }) => {
   const response = await request.post('/auth', {
     data: { username: 'invalido', password: 'errado' },
   });
 
-  expect(response.status()).toBe(401); // Teste falha - documenta o bug
+  expect(response.status()).toBe(401); // Falha até a API retornar 401 (RFC)
 });
 ```
+
+No Job Summary do GitHub Actions (suíte API), a seção **Falhas (cenario, esperado e encontrado)** usa o `results.json` do Playwright para listar testes com `ok: false`, com **resultado esperado** e **encontrado** extraídos da mensagem de erro (ex.: `Expected: 401` / `Received: 200`).
 
 ---
 

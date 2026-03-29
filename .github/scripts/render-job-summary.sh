@@ -37,9 +37,9 @@ if [ "$TYPE" = "api" ]; then
          else 0 end) as $pr
       | "### Metricas",
         "",
-        "| Total | Passaram | Falharam | Duracao (ms) | Pass rate (%) |",
-        "|:---|---:|---:|---:|---:|",
-        ("| \($total) | \($s.expected) | \($s.unexpected) | \($s.duration | floor) | \($pr) |"),
+        "| Pass rate (%) | Total | Passaram | Falharam | Duração |",
+        "|:---:|:---:|:---:|:---:|:---:|",
+        ("| \($pr) | \($total) | \($s.expected) | \($s.unexpected) | \($s.duration | floor) ms |"),
         ""
     ' "$PW_JSON" >> "$SUMMARY"
 
@@ -52,6 +52,38 @@ if [ "$TYPE" = "api" ]; then
       | .title as $g | .specs[]
       | "| \($g | gsub("[|]"; "/")) | \(.title | gsub("[|]"; "/")) | \(if .ok then "passed" else "failed" end) |"
     ' "$PW_JSON" >> "$SUMMARY"
+    append ""
+
+    append "### Falhas (cenario, esperado e encontrado)"
+    append ""
+    API_FAIL_ROWS="$(jq -r '
+      def strip_ansi: gsub("\u001b\\[[0-9;]*m"; "");
+      def parse_exp_rec($m):
+        ($m | strip_ansi) as $t
+        | if ($t | test("Expected:")) and ($t | test("Received:")) then
+            ($t | capture("Expected:\\s*(?<e>[^\\n]+)[\\s\\S]*?Received:\\s*(?<r>[^\\n]+)"))
+          else
+            {e: ($t | if length > 800 then .[0:800] + "..." else . end), r: "(ver mensagem)"}
+          end;
+      def walk($titles):
+        . as $node
+        | (($node.specs // [])[] | select(.ok == false)
+          | (.tests[0].results[0].error.message // .tests[0].results[0].errors[0].message // "") as $msg
+          | (($titles + [.title]) | map(select(test("\\.spec\\.[jt]s$") | not)) | join(" › ")) as $cen
+          | parse_exp_rec($msg) as $p
+          | "| \($cen | gsub("[|]"; "/")) | \($p.e | gsub("[|]"; "/")) | \($p.r | gsub("[|]"; "/")) |"
+          )
+        , (($node.suites // [])[] | walk($titles + [.title]))
+        ;
+      .suites[] | walk([.title])
+    ' "$PW_JSON" 2>/dev/null || true)"
+    if [ -n "$API_FAIL_ROWS" ]; then
+      append "| Cenario | Resultado esperado | Resultado encontrado |"
+      append "|:---|:---|:---|"
+      printf '%s\n' "$API_FAIL_ROWS" >> "$SUMMARY"
+    else
+      append "_Nenhuma falha registrada no JSON do Playwright._"
+    fi
     append ""
   else
     append "### Metricas (fallback: log)"
@@ -89,11 +121,11 @@ elif [ "$TYPE" = "e2e" ]; then
       | ([.[] | (.elements // [])[] | select((.keyword // "") | test("Scenario"))] | length) as $tot
       | ($tot - $ok) as $bad
       | (if $tot > 0 then (($ok * 10000 / $tot) | round / 100) else 0 end) as $pr
-      | "### Resumo geral",
+      | "### Metricas",
         "",
-        "| Cenarios | Passaram | Falharam | Pass rate (%) | Tempo (log) |",
+        "| Pass rate (%) | Total | Passaram | Falharam | Duração |",
         "|:---:|:---:|:---:|:---:|:---:|",
-        ("| \($tot) | \($ok) | \($bad) | \($pr) | \($t) |"),
+        ("| \($pr) | \($tot) | \($ok) | \($bad) | \($t) |"),
         ""
     ' "$CU_JSON" >> "$SUMMARY"
 
