@@ -26,12 +26,15 @@ export class ProductsPage {
   }
 
   async clickSubcategory(subcategory: string) {
-    const links = this.page.locator(`a:has-text("${subcategory}")`);
-    const n = await links.count();
+    const link = this.page.getByRole('link', {
+      name: new RegExp(`^\\s*${subcategory}\\s*$`, 'i'),
+    });
+    const n = await link.count();
     for (let i = 0; i < n; i++) {
-      const link = links.nth(i);
-      if (await link.isVisible()) {
-        await link.click();
+      const loc = link.nth(i);
+      await loc.waitFor({ state: 'visible', timeout: 15000 }).catch(() => undefined);
+      if (await loc.isVisible()) {
+        await loc.click();
         return;
       }
     }

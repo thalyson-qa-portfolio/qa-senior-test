@@ -11,5 +11,8 @@ export default defineConfig({
       'Accept': 'application/json',
     },
   },
-  reporter: [['html', { open: 'never', outputFolder: 'test-output/playwright-report' }]],
+  reporter: [
+    ['html', { open: 'never', outputFolder: 'test-output/playwright-report' }],
+    ['json', { outputFile: 'test-output/playwright-report/results.json' }],
+  ],
 });
