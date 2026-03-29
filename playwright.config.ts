@@ -10,5 +10,5 @@ export default defineConfig({
       'Accept': 'application/json',
     },
   },
-  reporter: [['html', { open: 'never' }], ['github']],
+  reporter: [['html', { open: 'never' }]],
 });
