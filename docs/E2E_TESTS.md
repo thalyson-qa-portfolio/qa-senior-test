@@ -54,7 +54,7 @@ Este documento descreve a implementação dos testes automatizados E2E (End-to-E
 | Cartão inválido | Cenário "Checkout com número de cartão inválido" | `checkout.feature` |
 | Campos vazios | Cenário "Checkout com campos de pagamento vazios" | `checkout.feature` |
 | Endereço incompleto | Cenário "Cadastro sem preencher endereço" | `login.feature` |
-| Relatório | Cucumber HTML + JSON; traces **só em falha** | `test-output/reports/` sempre; `test-output/traces/` se houver cenário falho |
+| Relatório | Cucumber HTML + JSON; **Allure** (feature → cenário → steps); traces **só em falha** | `reports/`, `allure-results/` + `report:allure` → `allure-report/`; `traces/` se falhar |
 
 ---
 
@@ -220,7 +220,7 @@ Resumo do comportamento:
 
 - **Trace:** gravação ligada em todo cenário; no **After**, se o cenário **falhou** → `tracing.stop({ path: .../*.zip })` + screenshot; se **passou** → `tracing.stop()` **sem** path (descarta o trace, evitando dezenas de `.zip` quando tudo verde).
 - **Vídeo:** só se `VIDEO=true`.
-- **CI:** artifact **e2e-report** contém apenas `test-output/reports/` (HTML + JSON Cucumber). Com falha, há também **e2e-failure-evidence** (traces, screenshots, videos).
+- **CI:** artifact **e2e-report** inclui Cucumber (`reports/`) e Allure (`allure-report/`). Com falha, há também **e2e-failure-evidence** (traces, screenshots, videos).
 
 **Recursos de debugging:**
 - `HEADLESS=false` - Ver browser executando
@@ -325,12 +325,18 @@ SLOWMO=500 npm run test:e2e
 ### Ver Relatórios
 
 ```bash
-# Relatório Cucumber HTML
+# Relatório Cucumber HTML (lista longa de steps)
 open test-output/reports/cucumber-report.html
 
-# Trace Viewer (análise detalhada)
-npx playwright show-trace test-output/traces/Login_com_credenciais_validas.zip
+# Allure Report — hierarquia Feature → Cenário → steps, gráfico no topo (requer Java para gerar)
+npm run report:allure
+open test-output/allure-report/index.html
+
+# Trace Viewer (só quando o cenário falha — ver hooks)
+npx playwright show-trace test-output/traces/<nome_do_cenario>.zip
 ```
+
+**Allure:** o formatter `allure-cucumberjs/reporter` está em [cucumber.js](../cucumber.js); resultados em `test-output/allure-results/`. O comando `npm run report:allure` usa `allure-commandline` (precisa **Java**). No GitHub Actions o job E2E instala Java 17 e publica `test-output/allure-report/` no artifact **e2e-report** junto com o HTML do Cucumber.
 
 ---
 
@@ -394,6 +400,7 @@ npx playwright show-trace test-output/traces/Login_com_credenciais_validas.zip
 |------------|--------|-----|
 | Playwright | 1.58.2 | Automação de browser |
 | Cucumber | 11.3.0 | Framework BDD |
+| Allure Report | 2.x (CLI) + allure-cucumberjs 3.x | Relatório interativo (gráfico, hierarquia) |
 | TypeScript | 6.0.2 | Linguagem |
 | Node.js | 18+ | Runtime |
 
@@ -403,6 +410,7 @@ npx playwright show-trace test-output/traces/Login_com_credenciais_validas.zip
 
 - [Playwright Documentation](https://playwright.dev/)
 - [Cucumber.js Documentation](https://cucumber.io/docs/cucumber/)
+- [Allure Report — Cucumber.js](https://allurereport.org/docs/cucumberjs/)
 - [Automation Exercise](https://automationexercise.com/)
 - [Page Object Pattern](https://martinfowler.com/bliki/PageObject.html)
 
