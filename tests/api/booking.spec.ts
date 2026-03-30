@@ -1,11 +1,16 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIResponse } from '@playwright/test';
+
+/** Respostas com corpo JSON devem declarar Content-Type JSON (requisito por método). */
+function expectJsonContentType(response: APIResponse) {
+  expect(response.headers()['content-type'] || '').toContain('application/json');
+}
 
 test.describe('GET /booking', () => {
   test('deve retornar lista de reservas', async ({ request }) => {
     const response = await request.get('/booking');
 
     expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toContain('application/json');
+    expectJsonContentType(response);
 
     const body = await response.json();
     expect(Array.isArray(body)).toBe(true);
@@ -22,6 +27,7 @@ test.describe('POST /auth', () => {
     });
 
     expect(response.status()).toBe(200);
+    expectJsonContentType(response);
 
     const body = await response.json();
     expect(body.token).toBeDefined();
@@ -45,6 +51,7 @@ test.describe('POST /booking', () => {
     });
 
     expect(response.status()).toBe(200);
+    expectJsonContentType(response);
 
     const body = await response.json();
     expect(body.bookingid).toBeDefined();
@@ -73,6 +80,7 @@ test.describe('GET /booking/{id}', () => {
     const response = await request.get(`/booking/${bookingid}`);
 
     expect(response.status()).toBe(200);
+    expectJsonContentType(response);
 
     const body = await response.json();
     expect(body.firstname).toBe('Maria');
@@ -112,6 +120,7 @@ test.describe('PUT /booking/{id}', () => {
     });
 
     expect(response.status()).toBe(200);
+    expectJsonContentType(response);
 
     const body = await response.json();
     expect(body.totalprice).toBe(250);
@@ -143,6 +152,9 @@ test.describe('DELETE /booking/{id}', () => {
     });
 
     expect(response.status()).toBe(201);
+    // DELETE costuma responder 201 com corpo curto (text/plain), não JSON
+    const deleteCt = (response.headers()['content-type'] || '').toLowerCase();
+    expect(deleteCt).toMatch(/application\/json|text\/plain/);
 
     const getResponse = await request.get(`/booking/${bookingid}`);
     expect(getResponse.status()).toBe(404);
@@ -215,5 +227,18 @@ test.describe('Testes negativos - Payload malformado', () => {
     });
 
     expect(response.status()).not.toBe(200);
+  });
+});
+
+test.describe('Testes negativos - Método HTTP não suportado', () => {
+  test('PATCH em /booking não deve ser aceito como operação válida', async ({ request }) => {
+    const response = await request.fetch('/booking', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      data: { firstname: 'X' },
+    });
+
+    expect(response.ok()).toBe(false);
+    expect([400, 404, 405, 501]).toContain(response.status());
   });
 });

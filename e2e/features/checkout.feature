@@ -29,4 +29,4 @@ Feature: Checkout
   Scenario: Checkout com numero de cartao invalido
     When preencho os dados do cartao com numero invalido
     And confirmo o pagamento
-    Then devo ver a mensagem de sucesso "Congratulations! Your order has been confirmed!"
+    Then o pagamento com cartao invalido deve ser recusado com mensagem de erro

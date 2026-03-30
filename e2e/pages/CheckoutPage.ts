@@ -61,8 +61,9 @@ export class CheckoutPage {
     await this.fillCardDetails('Usuario Teste', '4111111111111111', '123', '12', '2030');
   }
 
+  /** Dados de cartão inválidos para o cenário negativo (o demo pode ainda confirmar o pedido). */
   async fillInvalidCardDetails() {
-    await this.fillCardDetails('Usuario Teste', '0000000000000000', '000', '01', '2020');
+    await this.fillCardDetails('Usuario Teste', '4000000000000002', '999', '01', '2030');
   }
 
   async clearCardFields() {
@@ -75,5 +76,9 @@ export class CheckoutPage {
 
   getNameOnCardInput() {
     return this.page.locator(this.nameOnCardInput);
+  }
+
+  getCardNumberInput() {
+    return this.page.locator(this.cardNumberInput);
   }
 }

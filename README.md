@@ -2,13 +2,17 @@
 
 Projeto de automação de testes desenvolvido como avaliação técnica para vaga de **QA Sênior**. O projeto cobre testes de API, testes E2E com BDD, integração CI/CD e testes de performance.
 
+### Resumo para o avaliador
+
+Há **duas falhas conhecidas** enquanto os serviços públicos se comportam assim: o teste de API **POST /auth** com credenciais inválidas espera **401**, mas a Restful-Booker responde **200**; o E2E de **checkout com cartão inválido** espera recusa com mensagem, mas o Automation Exercise pode confirmar o pedido. Detalhes em [docs/API_TESTS.md](docs/API_TESTS.md) e [docs/E2E_TESTS.md](docs/E2E_TESTS.md). No **CI**, o job de performance executa apenas o **smoke** K6 (10 VUs, 30 s); o perfil completo (**500 VUs**, platô **5 min**, **~7 min** no total com ramp-up/down) está no script e em [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md), executável localmente com `npm run test:perf`.
+
 ---
 
 ## Tecnologias e Versões
 
 | Tecnologia | Versão | Uso |
 |------------|--------|-----|
-| Node.js | 18+ | Runtime |
+| Node.js | 18+ (CI: 20) | Runtime |
 | TypeScript | 6.0.2 | Linguagem |
 | Playwright | 1.58.2 | Testes de API e automação de browser |
 | Cucumber | 11.3.0 | Framework BDD (Gherkin) |
@@ -55,7 +59,7 @@ qa-senior-test/
 │   ├── E2E_TESTS.md             # Documentação dos testes E2E
 │   └── PERFORMANCE_TESTS.md     # Documentação dos testes de carga (K6)
 ├── performance/
-│   └── load-test.js             # Script K6 (500 VUs, 5 min de carga)
+│   └── load-test.js             # Script K6 (500 VUs, platô 5 min; ~7 min totais)
 ├── test-output/                 # Saidas geradas (gitignored)
 │   ├── playwright-report/     # Relatorio HTML API (Playwright)
 │   ├── test-results/          # Artefatos de falha API (Playwright)
@@ -73,13 +77,13 @@ qa-senior-test/
 
 ## Pré-requisitos
 
-- **Node.js** 18 ou superior
+- **Node.js** 18 ou superior (o pipeline em GitHub Actions usa **Node 20**)
 - **npm** (incluso com Node.js)
 - **K6** 1.x (apenas para `npm run test:perf`; ver secao Instalacao, passo 4)
 
 Verificar versão instalada:
 ```bash
-node --version  # v18.x.x ou superior
+node --version  # v18.x.x ou superior (CI: 20.x)
 npm --version
 ```
 
@@ -301,7 +305,7 @@ Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub
 
 ## Cenários de Teste
 
-### API (11 testes)
+### API (12 testes)
 
 Com a Restful-Booker pública, o cenário de credenciais inválidas **falha de propósito**: o teste exige **401**, mas a API responde **200** com `Bad credentials` (comportamento documentado; ver [docs/API_TESTS.md](docs/API_TESTS.md)).
 
@@ -318,8 +322,9 @@ Com a Restful-Booker pública, o cenário de credenciais inválidas **falha de p
 | Negativo | POST sem campos obrigatórios | Passa |
 | Negativo | GET ID inexistente | Passa |
 | Negativo | DELETE sem ID | Passa |
+| Negativo | PATCH /booking - Método não suportado | Passa |
 
-**Resumo:** 10 passando, 1 falhando (bug conhecido da API).
+**Resumo:** 11 passando, 1 falhando (bug conhecido da API).
 
 ### E2E (10 cenários)
 
@@ -331,10 +336,12 @@ Com a Restful-Booker pública, o cenário de credenciais inválidas **falha de p
 | Login | Cadastro sem endereço | Negativo |
 | Checkout | Completo com sucesso | Positivo |
 | Checkout | Campos de pagamento vazios | Negativo |
-| Checkout | Cartão inválido | Negativo |
+| Checkout | Cartão inválido | Negativo (espera recusa; **falha** no site demo — bug conhecido) |
 | Navegação | Página de produtos | Positivo |
 | Navegação | Categoria de produtos | Positivo |
 | Navegação | Buscar produto | Positivo |
+
+**Resumo:** com o demo atual, costuma ficar **9 passando, 1 falhando** (checkout com cartão inválido); se o site passar a recusar o cartão como esperado, a suíte pode fechar em 10/10.
 
 ---
 

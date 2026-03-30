@@ -23,10 +23,10 @@ Documentação técnica detalhada: [docs/API_TESTS.md](docs/API_TESTS.md), [docs
 Validação de status, corpo e fluxos REST (incluindo negativos), métodos GET/POST/PUT/DELETE, autenticação, relatório.
 
 ### Como foi resolvido
-- **Arquivo único da suíte:** [tests/api/booking.spec.ts](tests/api/booking.spec.ts) — cenários agrupados por `test.describe` (fluxo feliz, negativos de payload, negativos de autenticação/autorização).
+- **Arquivo único da suíte:** [tests/api/booking.spec.ts](tests/api/booking.spec.ts) — cenários agrupados por `test.describe` (fluxo feliz, negativos de payload, autenticação/autorização, **método HTTP não suportado**). Respostas JSON positivas validam `Content-Type`; DELETE 201 valida `application/json` ou `text/plain`.
 - **Base URL:** definida em [e2e/support/config.ts](e2e/support/config.ts) como `API_BASE_URL` e referenciada no [playwright.config.ts](playwright.config.ts) (`baseURL`).
 - **Relatório HTML:** gerado em `test-output/playwright-report/` (configuração do reporter em `playwright.config.ts`). **JSON:** `test-output/playwright-report/results.json` — usado pelo Job Summary da CI (métricas e tabela de falhas). Artefatos de falha da API em `test-output/test-results/` (`outputDir`).
-- **Credenciais inválidas em `POST /auth`:** a Restful-Booker responde **HTTP 200** com `{"reason":"Bad credentials"}` em vez de **401** (RFC). O teste **exige status 401**; com a API pública atual a suíte fica em **10 passando e 1 falhando**, documentando o bug. Ver [docs/API_TESTS.md](docs/API_TESTS.md).
+- **Credenciais inválidas em `POST /auth`:** a Restful-Booker responde **HTTP 200** com `{"reason":"Bad credentials"}` em vez de **401** (RFC). O teste **exige status 401**; com a API pública atual a suíte fica em **11 passando e 1 falhando**, documentando o bug. Ver [docs/API_TESTS.md](docs/API_TESTS.md).
 
 ### Onde aprofundar
 [docs/API_TESTS.md](docs/API_TESTS.md) — estrutura dos testes, como abrir o relatório, convenções.
@@ -42,13 +42,15 @@ Login (positivo/negativo), navegação, checkout (incluindo negativos), BDD com 
 - **Features:** [e2e/features/](e2e/features/) — `login.feature`, `checkout.feature`, `navegacao.feature`.
 - **Step definitions:** [e2e/steps/](e2e/steps/) — amarram Gherkin ao Playwright.
 - **Page Objects:** [e2e/pages/](e2e/pages/) — `LoginPage`, `CheckoutPage`, `ProductsPage` (locators e ações encapsulados).
+- **Checkout cartão inválido:** o cenário **não** usa mock de API; exige que o pedido **não** seja confirmado e que haja mensagem de erro. No Automation Exercise o pedido é confirmado — o teste **falha** e expõe a limitação do site (paralelo ao teste de `POST /auth` que espera 401).
 - **Hooks e browser:** [e2e/support/hooks.ts](e2e/support/hooks.ts) — browser Chromium, trace em falha, screenshots; pastas sob `test-output/` (screenshots, traces, videos, relatório Cucumber).
 - **Configuração Cucumber:** [cucumber.js](cucumber.js) — `paths` e `require` apontando para `e2e/`.
 - **Ajuste de estabilidade:** subcategorias na página de produtos podem ter mais de um link com o mesmo texto no DOM; o clique usa o **primeiro link visível** (ver `ProductsPage.clickSubcategory`) para evitar falha intermitente.
 
 ### Evidências e relatório
-- HTML Cucumber: `test-output/reports/cucumber-report.html`
+- HTML Cucumber (formatter oficial): `test-output/reports/cucumber-report.html`
 - JSON Cucumber (formatter): `test-output/reports/cucumber-results.json` — usado pelo Job Summary E2E (métricas e tabela de falhas).
+- **Dashboard** (`multiple-cucumber-html-reporter`): `test-output/cucumber-html-report/` (`index.html` após `npm run test:e2e`) — é o conteúdo do artifact **e2e-report** no GitHub Actions.
 - Traces / screenshots / vídeos: `test-output/traces`, `test-output/screenshots`, `test-output/videos` (conforme hooks e `VIDEO=true`).
 
 ### Onde aprofundar

@@ -51,7 +51,7 @@ Este documento descreve a implementação dos testes automatizados E2E (End-to-E
 | Dados de pagamento | `fillValidCardDetails()` | `CheckoutPage.ts` |
 | Finalizar compra | `confirmPayment()` | `CheckoutPage.ts` |
 | Checkout válido | Cenário "Checkout completo com sucesso" | `checkout.feature` |
-| Cartão inválido | Cenário "Checkout com número de cartão inválido" | `checkout.feature` |
+| Cartão inválido | Cenário exige erro e **não** confirmação; falha no Automation Exercise atual | `checkout.feature` + `checkout.steps.ts` |
 | Campos vazios | Cenário "Checkout com campos de pagamento vazios" | `checkout.feature` |
 | Endereço incompleto | Cenário "Cadastro sem preencher endereço" | `login.feature` |
 | Relatório | Cucumber HTML + JSON; **dashboard** (pizzas, features); traces **só em falha** | `reports/`; `cucumber-html-report/` (após `test:e2e`); `traces/` se falhar |
@@ -283,7 +283,7 @@ export const BASE_URL = 'https://automationexercise.com';
 |---|---------|------|--------------|
 | 5 | Checkout completo com sucesso | Positivo | Fluxo completo funciona |
 | 6 | Checkout com campos vazios | Negativo | Sistema exige dados do cartão |
-| 7 | Checkout com cartão inválido | Negativo | Sistema aceita formato (site não valida) |
+| 7 | Checkout com cartão inválido | Negativo | Espera recusa + mensagem de erro; no site demo o pedido é confirmado — **cenário falha** e sinaliza bug (igual ideia do POST /auth na API) |
 
 ### Navegação (3 cenários)
 
@@ -299,7 +299,7 @@ export const BASE_URL = 'https://automationexercise.com';
 
 ### Pré-requisitos
 
-- Node.js 18+
+- Node.js 18+ (o CI em GitHub Actions usa Node 20)
 - npm
 
 ### Instalação
@@ -404,7 +404,7 @@ npx playwright show-trace test-output/traces/<nome_do_cenario>.zip
 | Cucumber | 11.3.0 | Framework BDD |
 | multiple-cucumber-html-reporter | 3.x | Dashboard HTML a partir do JSON (pizzas, features) |
 | TypeScript | 6.0.2 | Linguagem |
-| Node.js | 18+ | Runtime |
+| Node.js | 18+ (CI: 20) | Runtime |
 
 ---
 

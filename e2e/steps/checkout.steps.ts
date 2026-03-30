@@ -5,6 +5,8 @@ import { CheckoutPage } from '../pages/CheckoutPage';
 
 let checkoutPage: CheckoutPage;
 
+const SUCCESS_TEXT = 'Congratulations! Your order has been confirmed!';
+
 Given('estou na pagina inicial', async () => {
   checkoutPage = new CheckoutPage(page);
   await checkoutPage.navigateToHome();
@@ -48,6 +50,21 @@ When('deixo os campos do cartao vazios', async () => {
 
 When('preencho os dados do cartao com numero invalido', async () => {
   await checkoutPage.fillInvalidCardDetails();
+});
+
+/**
+ * Comportamento esperado: não confirmar pedido e exibir erro de pagamento.
+ * No Automation Exercise o pedido costuma ser confirmado com cartão inválido — o cenário falha (bug visível na automação).
+ */
+Then('o pagamento com cartao invalido deve ser recusado com mensagem de erro', async () => {
+  await expect(page.getByText(SUCCESS_TEXT)).not.toBeVisible({
+    timeout: 15000,
+  });
+
+  const erroPagamento = page.getByText(
+    /invalid|incorrect|declined|failed|rejected|error|could not|unable to process|payment/i,
+  );
+  await expect(erroPagamento.first()).toBeVisible({ timeout: 5000 });
 });
 
 Then('devo ver erro de campos obrigatorios', async () => {

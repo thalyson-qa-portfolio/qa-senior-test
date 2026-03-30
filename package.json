@@ -1,7 +1,6 @@
 {
   "name": "qa-senior-test",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
     "test:api": "npx playwright test",
     "test:e2e": "node scripts/run-e2e.js",

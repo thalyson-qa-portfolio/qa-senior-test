@@ -19,11 +19,11 @@ Este documento descreve a implementação dos testes automatizados de API para o
 
 | Requisito | Implementação | Arquivo/Linha |
 |-----------|---------------|---------------|
-| Status codes | `expect(response.status()).toBe(200)` | Todos os testes |
-| Headers | `expect(response.headers()['content-type']).toContain('application/json')` | Linha 8 |
-| Corpo | `expect(body.firstname).toBe('João')` | Múltiplos testes |
-| Testes positivos | 6 testes cobrindo GET, POST, PUT, DELETE | Linhas 3-149 |
-| Testes negativos | 5 testes cobrindo erros | Linhas 152-219 |
+| Status codes | `expect(response.status()).toBe(...)` em cada fluxo | [booking.spec.ts](../tests/api/booking.spec.ts) |
+| Headers | `expectJsonContentType()` nos fluxos com corpo JSON; DELETE 201 aceita `application/json` ou `text/plain` | Helper + teste DELETE |
+| Corpo | `expect(body...)` após `response.json()` | Múltiplos testes |
+| Testes positivos | 6 testes cobrindo GET, POST, PUT, DELETE | `booking.spec.ts` |
+| Testes negativos | 6 testes (auth, PUT sem token, payload, GET 404, DELETE sem id, **PATCH não suportado**) | `booking.spec.ts` |
 
 ---
 
@@ -45,6 +45,7 @@ Este documento descreve a implementação dos testes automatizados de API para o
 |     POST    | `/booking`     | Cria reserva     | Campos ausentes (500)       |
 |     PUT     | `/booking/{id}`| Atualiza reserva | Sem token (403)             |
 |    DELETE   | `/booking/{id}`| Remove reserva   | Sem ID                      |
+|    PATCH    | `/booking`     | —                | Verbo não suportado (400/404/405/501) |
 
 **Relatório:** Gerado automaticamente pelo Playwright em `test-output/playwright-report/`.
 
@@ -73,6 +74,7 @@ test.describe('DELETE /booking/{id}', () => {...});
 // 3. Testes Negativos (agrupados por categoria)
 test.describe('Testes negativos - Autenticação', () => {...});
 test.describe('Testes negativos - Payload malformado', () => {...});
+test.describe('Testes negativos - Método HTTP não suportado', () => {...});
 ```
 
 ---
@@ -313,7 +315,7 @@ No Job Summary do GitHub Actions (suíte API), a seção **Falhas (cenario, espe
 
 ### Pré-requisitos
 
-- Node.js 18+
+- Node.js 18+ (o CI em GitHub Actions usa Node 20)
 - npm
 
 ### Instalação
@@ -352,8 +354,9 @@ npx playwright show-report test-output/playwright-report
 | 9 | POST sem campos obrigatórios | Negativo | ✅ Passa |
 | 10 | GET ID inexistente | Negativo | ✅ Passa |
 | 11 | DELETE sem ID | Negativo | ✅ Passa |
+| 12 | PATCH /booking (método inválido) | Negativo | ✅ Passa |
 
-**Total:** 10 passando, 1 falhando (bug documentado)
+**Total:** 11 passando, 1 falhando (bug documentado — POST /auth credenciais inválidas)
 
 ---
 
@@ -363,7 +366,7 @@ npx playwright show-report test-output/playwright-report
 |------------|--------|-----|
 | Playwright | 1.58.2 | Framework de testes |
 | TypeScript | 6.0.2 | Linguagem |
-| Node.js | 18+ | Runtime |
+| Node.js | 18+ (CI: 20) | Runtime |
 
 ---
 
