@@ -1,6 +1,3 @@
-const os = require('os');
-const process = require('process');
-
 module.exports = {
   default: {
     require: ['e2e/steps/**/*.ts', 'e2e/support/**/*.ts'],
@@ -10,16 +7,7 @@ module.exports = {
       'progress',
       'html:test-output/reports/cucumber-report.html',
       'json:test-output/reports/cucumber-results.json',
-      'allure-cucumberjs/reporter',
     ],
-    formatOptions: {
-      resultsDir: 'test-output/allure-results',
-      environmentInfo: {
-        os_platform: os.platform(),
-        os_release: os.release(),
-        node_version: process.version,
-      },
-    },
     timeout: 60000,
   },
 };

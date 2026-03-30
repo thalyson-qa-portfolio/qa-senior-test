@@ -59,9 +59,8 @@ qa-senior-test/
 ├── test-output/                 # Saidas geradas (gitignored)
 │   ├── playwright-report/     # Relatorio HTML API (Playwright)
 │   ├── test-results/          # Artefatos de falha API (Playwright)
-│   ├── reports/               # Relatorio HTML E2E (Cucumber)
-│   ├── allure-results/        # Dados brutos Allure (gerado no test:e2e)
-│   ├── allure-report/         # HTML Allure (apos npm run report:allure)
+│   ├── reports/               # Relatorio HTML E2E (Cucumber) + JSON
+│   ├── cucumber-html-report/  # Dashboard HTML (pizza, features) apos test:e2e
 │   ├── screenshots/           # Falhas E2E
 │   ├── traces/                # Trace Viewer E2E
 │   └── videos/                # VIDEO=true
@@ -77,7 +76,6 @@ qa-senior-test/
 - **Node.js** 18 ou superior
 - **npm** (incluso com Node.js)
 - **K6** 1.x (apenas para `npm run test:perf`; ver secao Instalacao, passo 4)
-- **Java** 8+ (opcional, para `npm run report:allure` após E2E; o HTML do Cucumber não precisa)
 
 Verificar versão instalada:
 ```bash
@@ -230,22 +228,19 @@ npx playwright show-report test-output/playwright-report
 
 O relatório HTML é gerado em `test-output/playwright-report/`.
 
-### Relatório E2E (Cucumber + Allure)
+### Relatório E2E (Cucumber + dashboard)
 
-Após executar `npm run test:e2e`:
+Após executar `npm run test:e2e` (o comando já gera o dashboard ao final):
 
-- **Cucumber HTML:** `test-output/reports/cucumber-report.html`
-- **Allure** (visão por feature/cenário, gráfico de resultado, drill-down nos steps): gere o HTML com Java 8+ instalado:
+- **Cucumber HTML (oficial):** `test-output/reports/cucumber-report.html`
+- **JSON:** `test-output/reports/cucumber-results.json`
+- **Dashboard** (pizzas, metadados, cards por feature — `multiple-cucumber-html-reporter`): `test-output/cucumber-html-report/index.html`
 
 ```bash
-npm run report:allure
-# Abrir no navegador (macOS):
-open test-output/allure-report/index.html
-# ou:
-npm run report:allure:open
+open test-output/cucumber-html-report/index.html
 ```
 
-Os dados brutos do Allure ficam em `test-output/allure-results/` (recriados a cada `npm run test:e2e`).
+Para regerar só o dashboard a partir do JSON existente: `npm run report:e2e`. Para rodar o Cucumber sem pós-processamento: `npm run test:e2e:cucumber`.
 
 ### Trace Viewer (Debugging E2E)
 
@@ -293,7 +288,7 @@ Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub
 | Artifact | Conteudo |
 |----------|----------|
 | `api-report` | `test-output/playwright-report/` |
-| `e2e-report` | Cucumber (`reports/`) + **Allure** (`allure-report/index.html`) — visão por feature e gráfico |
+| `e2e-report` | Cucumber (`reports/`) + dashboard (`cucumber-html-report/index.html`) |
 | `e2e-failure-evidence` | Só se algum cenario falhar: traces (`.zip`), screenshots, videos |
 
 **Como acessar:**

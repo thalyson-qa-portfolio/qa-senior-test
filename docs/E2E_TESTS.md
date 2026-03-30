@@ -54,7 +54,7 @@ Este documento descreve a implementação dos testes automatizados E2E (End-to-E
 | Cartão inválido | Cenário "Checkout com número de cartão inválido" | `checkout.feature` |
 | Campos vazios | Cenário "Checkout com campos de pagamento vazios" | `checkout.feature` |
 | Endereço incompleto | Cenário "Cadastro sem preencher endereço" | `login.feature` |
-| Relatório | Cucumber HTML + JSON; **Allure** (feature → cenário → steps); traces **só em falha** | `reports/`, `allure-results/` + `report:allure` → `allure-report/`; `traces/` se falhar |
+| Relatório | Cucumber HTML + JSON; **dashboard** (pizzas, features); traces **só em falha** | `reports/`; `cucumber-html-report/` (após `test:e2e`); `traces/` se falhar |
 
 ---
 
@@ -220,7 +220,7 @@ Resumo do comportamento:
 
 - **Trace:** gravação ligada em todo cenário; no **After**, se o cenário **falhou** → `tracing.stop({ path: .../*.zip })` + screenshot; se **passou** → `tracing.stop()` **sem** path (descarta o trace, evitando dezenas de `.zip` quando tudo verde).
 - **Vídeo:** só se `VIDEO=true`.
-- **CI:** artifact **e2e-report** inclui Cucumber (`reports/`) e Allure (`allure-report/`). Com falha, há também **e2e-failure-evidence** (traces, screenshots, videos).
+- **CI:** artifact **e2e-report** inclui Cucumber (`reports/`) e o dashboard (`cucumber-html-report/`). Com falha, há também **e2e-failure-evidence** (traces, screenshots, videos).
 
 **Recursos de debugging:**
 - `HEADLESS=false` - Ver browser executando
@@ -325,18 +325,20 @@ SLOWMO=500 npm run test:e2e
 ### Ver Relatórios
 
 ```bash
-# Relatório Cucumber HTML (lista longa de steps)
+# Dashboard (pizzas, metadados, cards por feature) — gerado ao final de npm run test:e2e
+open test-output/cucumber-html-report/index.html
+
+# Relatório Cucumber HTML oficial (lista de steps)
 open test-output/reports/cucumber-report.html
 
-# Allure Report — hierarquia Feature → Cenário → steps, gráfico no topo (requer Java para gerar)
-npm run report:allure
-open test-output/allure-report/index.html
+# Regerar só o dashboard a partir do JSON já existente
+npm run report:e2e
 
 # Trace Viewer (só quando o cenário falha — ver hooks)
 npx playwright show-trace test-output/traces/<nome_do_cenario>.zip
 ```
 
-**Allure:** o formatter `allure-cucumberjs/reporter` está em [cucumber.js](../cucumber.js); resultados em `test-output/allure-results/`. O comando `npm run report:allure` usa `allure-commandline` (precisa **Java**). No GitHub Actions o job E2E instala Java 17 e publica `test-output/allure-report/` no artifact **e2e-report** junto com o HTML do Cucumber.
+**Dashboard:** o pacote `multiple-cucumber-html-reporter` lê `test-output/reports/cucumber-results.json` (gerado pelo Cucumber conforme [cucumber.js](../cucumber.js)). O wrapper [scripts/run-e2e.js](../scripts/run-e2e.js) executa o Cucumber e, em seguida, gera `test-output/cucumber-html-report/`. **Não exige Java.** No GitHub Actions o artifact **e2e-report** inclui `reports/` e `cucumber-html-report/`; após baixar o zip, abra `cucumber-html-report/index.html` (pasta com `assets/` no mesmo diretório).
 
 ---
 
@@ -400,7 +402,7 @@ npx playwright show-trace test-output/traces/<nome_do_cenario>.zip
 |------------|--------|-----|
 | Playwright | 1.58.2 | Automação de browser |
 | Cucumber | 11.3.0 | Framework BDD |
-| Allure Report | 2.x (CLI) + allure-cucumberjs 3.x | Relatório interativo (gráfico, hierarquia) |
+| multiple-cucumber-html-reporter | 3.x | Dashboard HTML a partir do JSON (pizzas, features) |
 | TypeScript | 6.0.2 | Linguagem |
 | Node.js | 18+ | Runtime |
 
@@ -410,7 +412,7 @@ npx playwright show-trace test-output/traces/<nome_do_cenario>.zip
 
 - [Playwright Documentation](https://playwright.dev/)
 - [Cucumber.js Documentation](https://cucumber.io/docs/cucumber/)
-- [Allure Report — Cucumber.js](https://allurereport.org/docs/cucumberjs/)
+- [multiple-cucumber-html-reporter (npm)](https://www.npmjs.com/package/multiple-cucumber-html-reporter)
 - [Automation Exercise](https://automationexercise.com/)
 - [Page Object Pattern](https://martinfowler.com/bliki/PageObject.html)
 

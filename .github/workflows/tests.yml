@@ -67,17 +67,13 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Setup Java (Allure Report)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
       - name: Prepare output directories
-        run: mkdir -p test-output/reports test-output/traces test-output/screenshots test-output/videos test-output/allure-results test-output/allure-report
+        run: mkdir -p test-output/reports test-output/cucumber-html-report test-output/traces test-output/screenshots test-output/videos
 
       - name: Run E2E tests
         id: e2e
+        env:
+          CI: 'true'
         run: |
           set -o pipefail
           npm run test:e2e 2>&1 | tee cucumber-output.txt
@@ -88,21 +84,16 @@ jobs:
         if: always()
         run: bash .github/scripts/render-job-summary.sh e2e cucumber-output.txt
 
-      - name: Generate Allure Report
-        if: always()
-        continue-on-error: true
-        run: npx allure generate test-output/allure-results -o test-output/allure-report --clean
+      # Relatório Cucumber (HTML + JSON) + dashboard multiple-cucumber-html-reporter (gerado em test:e2e)
 
-      # Relatorio Cucumber + Allure (HTML); JSON para Job Summary
-
-      - name: Upload E2E reports (Cucumber + Allure)
+      - name: Upload E2E reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: e2e-report
           path: |
             test-output/reports/
-            test-output/allure-report/
+            test-output/cucumber-html-report/
           if-no-files-found: ignore
           retention-days: 30
 
