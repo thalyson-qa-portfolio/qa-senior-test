@@ -35,12 +35,16 @@ Before(async () => {
 
 After(async function (scenario) {
   const scenarioName = scenario.pickle.name.replace(/\s+/g, '_');
+  const failed = scenario.result?.status === Status.FAILED;
 
-  if (scenario.result?.status === Status.FAILED) {
+  if (failed) {
     await page.screenshot({ path: path.join(dirs.screenshots, `${scenarioName}.png`) });
+    await context.tracing.stop({ path: path.join(dirs.traces, `${scenarioName}.zip`) });
+  } else {
+    // Sem falha: descarta o trace (evita um .zip por cenário no artifact)
+    await context.tracing.stop();
   }
 
-  await context.tracing.stop({ path: path.join(dirs.traces, `${scenarioName}.zip`) });
   await page.close();
   await context.close();
 });

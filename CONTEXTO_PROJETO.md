@@ -66,7 +66,7 @@ Pipeline que execute testes após commits, com visibilidade dos resultados.
 - **Triggers:** push em qualquer branch; pull request para `main`.
 - **Três jobs em paralelo:**
   1. **api-tests** — `npm ci`, `npm run test:api`, upload do artifact **api-report** (`test-output/playwright-report/`).
-  2. **e2e-tests** — `npm ci`, Playwright Chromium, `npm run test:e2e`, artifact **e2e-report** (HTML Cucumber, traces, screenshots, videos).
+  2. **e2e-tests** — `npm ci`, Playwright Chromium, `npm run test:e2e`, artifact **e2e-report** (só `test-output/reports/`: HTML + JSON Cucumber). Se a suíte falhar, artifact adicional **e2e-failure-evidence** (traces, screenshots, videos).
   3. **performance-tests** — instalação do K6 (`grafana/setup-k6-action`), `npm run test:perf:smoke` (10 VUs, 30 s) para validar o script em CI sem o custo da carga completa.
 - **Job Summary (painel da execução):** [.github/scripts/render-job-summary.sh](.github/scripts/render-job-summary.sh) escreve Markdown em `GITHUB_STEP_SUMMARY` (variável injetada pelo runner). O workflow grava o **exit code real** do comando de teste em `.job-exit-code`; o script usa isso para o badge (**Run: success** / falhou) e monta o conteúdo por tipo de suíte (`api`, `e2e`, `k6`).
   - **Métricas (API e E2E):** seção `### Metricas` com a **mesma** tabela: **Pass rate (%)** na primeira coluna, depois **Total**, **Passaram**, **Falharam**, **Duração** (na API, duração em ms a partir do `results.json` do Playwright; no E2E, texto de duração extraído do log do Cucumber quando existir, senão `n/d`).

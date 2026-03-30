@@ -54,7 +54,7 @@ Este documento descreve a implementação dos testes automatizados E2E (End-to-E
 | Cartão inválido | Cenário "Checkout com número de cartão inválido" | `checkout.feature` |
 | Campos vazios | Cenário "Checkout com campos de pagamento vazios" | `checkout.feature` |
 | Endereço incompleto | Cenário "Cadastro sem preencher endereço" | `login.feature` |
-| Relatório | Cucumber HTML Report + Playwright Traces | `test-output/reports/`, `test-output/traces/` |
+| Relatório | Cucumber HTML + JSON; traces **só em falha** | `test-output/reports/` sempre; `test-output/traces/` se houver cenário falho |
 
 ---
 
@@ -214,43 +214,13 @@ Then('devo ver a mensagem {string}', async (_mensagem: string) => {
 
 ### 5. Hooks (Before/After)
 
-Hooks executam código antes/depois de cada cenário.
+Hooks executam código antes/depois de cada cenário. Implementação canônica: **[e2e/support/hooks.ts](../e2e/support/hooks.ts)**.
 
-```typescript
-import { BeforeAll, Before, After, AfterAll, setDefaultTimeout } from '@cucumber/cucumber';
-import { chromium, Browser, Page, BrowserContext } from '@playwright/test';
+Resumo do comportamento:
 
-let browser: Browser;
-let context: BrowserContext;
-export let page: Page;
-
-setDefaultTimeout(60000); // Timeout de 60s
-
-BeforeAll(async () => {
-  browser = await chromium.launch({
-    headless: process.env.HEADLESS !== 'false',
-  });
-});
-
-Before(async () => {
-  context = await browser.newContext();
-  page = await context.newPage();
-  // Inicia gravação do trace
-  await context.tracing.start({ screenshots: true, snapshots: true });
-});
-
-After(async (scenario) => {
-  // Salva trace para análise
-  await context.tracing.stop({ 
-    path: `test-output/traces/${scenario.pickle.name}.zip` 
-  });
-  await page.close();
-});
-
-AfterAll(async () => {
-  await browser.close();
-});
-```
+- **Trace:** gravação ligada em todo cenário; no **After**, se o cenário **falhou** → `tracing.stop({ path: .../*.zip })` + screenshot; se **passou** → `tracing.stop()` **sem** path (descarta o trace, evitando dezenas de `.zip` quando tudo verde).
+- **Vídeo:** só se `VIDEO=true`.
+- **CI:** artifact **e2e-report** contém apenas `test-output/reports/` (HTML + JSON Cucumber). Com falha, há também **e2e-failure-evidence** (traces, screenshots, videos).
 
 **Recursos de debugging:**
 - `HEADLESS=false` - Ver browser executando

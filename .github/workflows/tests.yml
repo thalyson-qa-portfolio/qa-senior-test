@@ -71,6 +71,7 @@ jobs:
         run: mkdir -p test-output/reports test-output/traces test-output/screenshots test-output/videos
 
       - name: Run E2E tests
+        id: e2e
         run: |
           set -o pipefail
           npm run test:e2e 2>&1 | tee cucumber-output.txt
@@ -81,13 +82,23 @@ jobs:
         if: always()
         run: bash .github/scripts/render-job-summary.sh e2e cucumber-output.txt
 
-      - name: Upload E2E test report
+      # Relatorio Cucumber (HTML + JSON) — leve; sempre disponivel
+      - name: Upload E2E Cucumber report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: e2e-report
+          path: test-output/reports/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      # Traces, screenshots e videos quando o step de testes falhou
+      - name: Upload E2E failure evidence
+        uses: actions/upload-artifact@v4
+        if: always() && steps.e2e.outcome == 'failure'
+        with:
+          name: e2e-failure-evidence
           path: |
-            test-output/reports/
             test-output/traces/
             test-output/screenshots/
             test-output/videos/
