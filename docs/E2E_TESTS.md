@@ -220,7 +220,7 @@ Resumo do comportamento:
 
 - **Trace:** gravação ligada em todo cenário; no **After**, se o cenário **falhou** → `tracing.stop({ path: .../*.zip })` + screenshot; se **passou** → `tracing.stop()` **sem** path (descarta o trace, evitando dezenas de `.zip` quando tudo verde).
 - **Vídeo:** só se `VIDEO=true`.
-- **CI:** artifact **e2e-report** inclui Cucumber (`reports/`) e o dashboard (`cucumber-html-report/`). Com falha, há também **e2e-failure-evidence** (traces, screenshots, videos).
+- **CI:** artifact **e2e-report** inclui só o dashboard (`cucumber-html-report/`). O JSON em `reports/` é usado no runner pelo Job Summary e não entra no zip. Com falha, há também **e2e-failure-evidence** (traces, screenshots, videos).
 
 **Recursos de debugging:**
 - `HEADLESS=false` - Ver browser executando
@@ -338,7 +338,7 @@ npm run report:e2e
 npx playwright show-trace test-output/traces/<nome_do_cenario>.zip
 ```
 
-**Dashboard:** o pacote `multiple-cucumber-html-reporter` lê `test-output/reports/cucumber-results.json` (gerado pelo Cucumber conforme [cucumber.js](../cucumber.js)). O wrapper [scripts/run-e2e.js](../scripts/run-e2e.js) executa o Cucumber e, em seguida, gera `test-output/cucumber-html-report/`. **Não exige Java.** No GitHub Actions o artifact **e2e-report** inclui `reports/` e `cucumber-html-report/`; após baixar o zip, abra `cucumber-html-report/index.html` (pasta com `assets/` no mesmo diretório).
+**Dashboard:** o pacote `multiple-cucumber-html-reporter` lê `test-output/reports/cucumber-results.json` (gerado pelo Cucumber conforme [cucumber.js](../cucumber.js)). O wrapper [scripts/run-e2e.js](../scripts/run-e2e.js) executa o Cucumber e, em seguida, gera `test-output/cucumber-html-report/`. **Não exige Java.** No GitHub Actions o artifact **e2e-report** contém apenas `cucumber-html-report/`; após baixar o zip, abra `index.html` (mantendo `assets/` ao lado).
 
 ---
 

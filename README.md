@@ -288,7 +288,7 @@ Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub
 | Artifact | Conteudo |
 |----------|----------|
 | `api-report` | `test-output/playwright-report/` |
-| `e2e-report` | Cucumber (`reports/`) + dashboard (`cucumber-html-report/index.html`) |
+| `e2e-report` | Dashboard E2E (`cucumber-html-report/` — abrir `index.html`) |
 | `e2e-failure-evidence` | Só se algum cenario falhar: traces (`.zip`), screenshots, videos |
 
 **Como acessar:**

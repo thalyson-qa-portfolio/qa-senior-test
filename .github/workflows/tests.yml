@@ -84,16 +84,14 @@ jobs:
         if: always()
         run: bash .github/scripts/render-job-summary.sh e2e cucumber-output.txt
 
-      # Relatório Cucumber (HTML + JSON) + dashboard multiple-cucumber-html-reporter (gerado em test:e2e)
+      # Dashboard E2E (JSON em reports/ fica no runner para o Job Summary; artifact só o HTML do dashboard)
 
-      - name: Upload E2E reports
+      - name: Upload E2E report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: e2e-report
-          path: |
-            test-output/reports/
-            test-output/cucumber-html-report/
+          path: test-output/cucumber-html-report/
           if-no-files-found: ignore
           retention-days: 30
 
