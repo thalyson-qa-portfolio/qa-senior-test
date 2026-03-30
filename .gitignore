@@ -4,3 +4,6 @@ dist/
 test-output/
 *.log
 performance/k6-results.json
+
+# Estudo pessoal (não versionar)
+docs/GUIA_PERFORMANCE_E_ENTREVISTA.md

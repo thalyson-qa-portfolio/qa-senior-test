@@ -293,6 +293,8 @@ Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub
 
 ### API (11 testes)
 
+Com a Restful-Booker pública, o cenário de credenciais inválidas **falha de propósito**: o teste exige **401**, mas a API responde **200** com `Bad credentials` (comportamento documentado; ver [docs/API_TESTS.md](docs/API_TESTS.md)).
+
 | Tipo | Cenário | Status |
 |------|---------|--------|
 | Positivo | GET /booking - Lista reservas | Passa |
@@ -301,11 +303,13 @@ Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub
 | Positivo | GET /booking/{id} - Busca específica | Passa |
 | Positivo | PUT /booking/{id} - Atualiza reserva | Passa |
 | Positivo | DELETE /booking/{id} - Remove reserva | Passa |
-| Negativo | POST /auth - Credenciais inválidas | Passa (contrato real: 200 + `Bad credentials`, sem token) |
+| Negativo | POST /auth - Credenciais inválidas | Falha (esperado 401; API retorna 200) |
 | Negativo | PUT sem token | Passa |
 | Negativo | POST sem campos obrigatórios | Passa |
 | Negativo | GET ID inexistente | Passa |
 | Negativo | DELETE sem ID | Passa |
+
+**Resumo:** 10 passando, 1 falhando (bug conhecido da API).
 
 ### E2E (10 cenários)
 
