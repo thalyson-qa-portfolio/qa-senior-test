@@ -283,7 +283,7 @@ export const BASE_URL = 'https://automationexercise.com';
 |---|---------|------|--------------|
 | 5 | Checkout completo com sucesso | Positivo | Fluxo completo funciona |
 | 6 | Checkout com campos vazios | Negativo | Sistema exige dados do cartão |
-| 7 | Checkout com cartão inválido | Negativo | Espera recusa + mensagem de erro; no site demo o pedido é confirmado — **cenário falha** e sinaliza bug (igual ideia do POST /auth na API) |
+| 7 | Checkout com cartão inválido | Negativo | Tag `@known_issue` — excluído no CI (`test:e2e:ci`); no demo o pedido pode ser confirmado; localmente `test:e2e` ainda executa o cenário |
 
 ### Navegação (3 cenários)
 
@@ -292,6 +292,10 @@ export const BASE_URL = 'https://automationexercise.com';
 | 8 | Navegar para página de produtos | Positivo | Menu funciona |
 | 9 | Navegar para categoria | Positivo | Filtro por categoria funciona |
 | 10 | Buscar produto | Positivo | Busca retorna resultados |
+
+### Quarentena no CI (`@known_issue`)
+
+Cenários **known issue** (comportamento do demo incompatível com o esperado) levam a tag **`@known_issue`**. O **CI** usa `npm run test:e2e:ci`, equivalente a `cucumber-js --tags "not @known_issue"` via [scripts/run-e2e.js](../scripts/run-e2e.js). Assim o pipeline permanece verde sem esconder o cenário no repositório — basta correr `npm run test:e2e` localmente para a suíte completa.
 
 ---
 
@@ -312,8 +316,11 @@ npx playwright install chromium
 ### Executar Testes
 
 ```bash
-# Todos os testes E2E
+# Todos os cenários (10), incluindo @known_issue — igual a validar tudo localmente
 npm run test:e2e
+
+# Mesmo subconjunto que o CI: exclui cenários com @known_issue (9 cenários)
+npm run test:e2e:ci
 
 # Com browser visível
 HEADLESS=false npm run test:e2e

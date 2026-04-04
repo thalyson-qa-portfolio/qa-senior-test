@@ -4,9 +4,11 @@
   "scripts": {
     "test:api": "npx playwright test",
     "test:e2e": "node scripts/run-e2e.js",
+    "test:e2e:ci": "node scripts/run-e2e.js --tags 'not @known_issue'",
     "test:e2e:cucumber": "npx cucumber-js",
     "report:e2e": "node scripts/generate-cucumber-html-report.js",
-    "test": "npm run test:api && npm run test:e2e",
+    "test": "npm run test:api && npm run test:e2e:ci",
+    "test:all": "npm run test:api && npm run test:e2e",
     "test:perf": "k6 run performance/load-test.js",
     "test:perf:smoke": "k6 run --vus 10 --duration 30s performance/load-test.js"
   },

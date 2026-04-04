@@ -4,7 +4,7 @@ Projeto de automação de testes desenvolvido como avaliação técnica para vag
 
 ### Resumo para o avaliador
 
-Há **duas falhas conhecidas** enquanto os serviços públicos se comportam assim: o teste de API **POST /auth** com credenciais inválidas espera **401**, mas a Restful-Booker responde **200**; o E2E de **checkout com cartão inválido** espera recusa com mensagem, mas o Automation Exercise pode confirmar o pedido. Detalhes em [docs/API_TESTS.md](docs/API_TESTS.md) e [docs/E2E_TESTS.md](docs/E2E_TESTS.md). No **CI**, o job de performance executa apenas o **smoke** K6 (10 VUs, 30 s); o perfil completo (**500 VUs**, platô **5 min**, **~7 min** no total com ramp-up/down) está no script e em [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md), executável localmente com `npm run test:perf`.
+Os mesmos serviços públicos têm **comportamentos documentados** que não batem com o contrato ideal: **POST /auth** com credenciais inválidas deveria retornar **401**, mas a Restful-Booker responde **200**; no E2E, **checkout com cartão inválido** deveria recusar com mensagem, mas o Automation Exercise pode confirmar o pedido. Esses casos estão **em quarentena no CI** (`test.fixme` na API; tag `@known_issue` excluída no E2E com `npm run test:e2e:ci`) para o pipeline permanecer verde e confiável; a suíte **completa** localmente continua em [docs/API_TESTS.md](docs/API_TESTS.md) e [docs/E2E_TESTS.md](docs/E2E_TESTS.md). No **CI**, o job de performance executa apenas o **smoke** K6 (10 VUs, 30 s); o perfil completo (**500 VUs**, platô **5 min**, **~7 min** no total com ramp-up/down) está em [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md), executável com `npm run test:perf`.
 
 ---
 
@@ -164,7 +164,13 @@ Executa testes automatizados contra a API [Restful-Booker](https://restful-booke
 npm run test:e2e
 ```
 
-Executa testes E2E com Cucumber no site [Automation Exercise](https://automationexercise.com/).
+Executa testes E2E com Cucumber no site [Automation Exercise](https://automationexercise.com/) — **todos** os cenários, incluindo os com `@known_issue` (podem falhar por bug do demo).
+
+Mesmo conjunto que o **CI** usa (exclui `@known_issue`):
+
+```bash
+npm run test:e2e:ci
+```
 
 **Cobertura:**
 - Login (positivo e negativo)
@@ -188,13 +194,19 @@ npm run test:perf:smoke
 
 **Documentacao:** [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md)
 
-### Todos os Testes
+### Todos os Testes (mesmo criterio do CI)
 
 ```bash
 npm test
 ```
 
-Executa testes de API e E2E sequencialmente (nao inclui K6).
+Executa API e E2E com `test:e2e:ci` (exclui cenários `@known_issue`; não inclui K6). É o comando mais útil para validar tudo **verde** antes de um PR.
+
+Suíte **completa** (inclui checkout com cartão inválido — pode falhar por bug do demo):
+
+```bash
+npm run test:all
+```
 
 ---
 
@@ -280,7 +292,7 @@ O projeto inclui pipeline de integracao continua que executa automaticamente:
 | Job | Descricao | Duracao |
 |-----|-----------|---------|
 | `api-tests` | Executa testes de API | ~1 min |
-| `e2e-tests` | Executa testes E2E com Chromium | ~2-3 min |
+| `e2e-tests` | E2E com Chromium (`test:e2e:ci` — sem `@known_issue`) | ~2-3 min |
 | `performance-tests` | K6 smoke (`npm run test:perf:smoke`, 10 VUs / 30s) | ~1 min |
 
 A carga completa (500 VUs, varios minutos) continua apenas localmente via `npm run test:perf`; o CI valida o script e o alvo com execucao leve.
@@ -307,9 +319,9 @@ Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub
 
 ## Cenários de Teste
 
-### API (12 testes)
+### API (12 testes no código; 11 executados no CI)
 
-Com a Restful-Booker pública, o cenário de credenciais inválidas **falha de propósito**: o teste exige **401**, mas a API responde **200** com `Bad credentials` (comportamento documentado; ver [docs/API_TESTS.md](docs/API_TESTS.md)).
+O teste de credenciais inválidas em **POST /auth** documenta o bug da API (espera **401**, recebe **200**) e está marcado com **`test.fixme`** — não executa no relatório como falha e **não bloqueia** o pipeline. No **CI**, a suíte API fica **11 passed + 1 fixme** (ver [docs/API_TESTS.md](docs/API_TESTS.md)).
 
 | Tipo | Cenário | Status |
 |------|---------|--------|
@@ -319,16 +331,18 @@ Com a Restful-Booker pública, o cenário de credenciais inválidas **falha de p
 | Positivo | GET /booking/{id} - Busca específica | Passa |
 | Positivo | PUT /booking/{id} - Atualiza reserva | Passa |
 | Positivo | DELETE /booking/{id} - Remove reserva | Passa |
-| Negativo | POST /auth - Credenciais inválidas | Falha (esperado 401; API retorna 200) |
+| Negativo | POST /auth - Credenciais inválidas | fixme (bug documentado — API retorna 200) |
 | Negativo | PUT sem token | Passa |
 | Negativo | POST sem campos obrigatórios | Passa |
 | Negativo | GET ID inexistente | Passa |
 | Negativo | DELETE sem ID | Passa |
 | Negativo | PATCH /booking - Método não suportado | Passa |
 
-**Resumo:** 11 passando, 1 falhando (bug conhecido da API).
+**Resumo (CI):** 11 passando, 1 fixme (known issue Restful-Booker).
 
-### E2E (10 cenários)
+### E2E (10 cenários no código; 9 no CI)
+
+No **CI** usa-se `npm run test:e2e:ci`, que exclui cenários com **`@known_issue`** (checkout com cartão inválido — bug comum no demo). Localmente, `npm run test:e2e` roda os **10** cenários; o cenário em quarentena pode falhar até o site passar a recusar o cartão (ver [docs/E2E_TESTS.md](docs/E2E_TESTS.md)).
 
 | Feature | Cenário | Tipo |
 |---------|---------|------|
@@ -338,12 +352,12 @@ Com a Restful-Booker pública, o cenário de credenciais inválidas **falha de p
 | Login | Cadastro sem endereço | Negativo |
 | Checkout | Completo com sucesso | Positivo |
 | Checkout | Campos de pagamento vazios | Negativo |
-| Checkout | Cartão inválido | Negativo (espera recusa; **falha** no site demo — bug conhecido) |
+| Checkout | Cartão inválido | Negativo (excluído no CI — `@known_issue`) |
 | Navegação | Página de produtos | Positivo |
 | Navegação | Categoria de produtos | Positivo |
 | Navegação | Buscar produto | Positivo |
 
-**Resumo:** com o demo atual, costuma ficar **9 passando, 1 falhando** (checkout com cartão inválido); se o site passar a recusar o cartão como esperado, a suíte pode fechar em 10/10.
+**Resumo (CI):** 9 cenários executados, esperado **verde**; suíte completa local = 10 cenários.
 
 ---
 

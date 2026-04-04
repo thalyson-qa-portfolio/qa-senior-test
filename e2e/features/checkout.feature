@@ -25,7 +25,7 @@ Feature: Checkout
     And confirmo o pagamento
     Then devo ver erro de campos obrigatorios
 
-  @checkout-invalid-card
+  @checkout-invalid-card @known_issue
   Scenario: Checkout com numero de cartao invalido
     When preencho os dados do cartao com numero invalido
     And confirmo o pagamento

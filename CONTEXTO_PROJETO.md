@@ -9,7 +9,7 @@ Este documento **não substitui** o [README.md](README.md) nem a pasta [docs/](d
 | Área | Ferramenta | Onde está | Comando local |
 |------|------------|-----------|---------------|
 | API | Playwright Test | [tests/api/booking.spec.ts](tests/api/booking.spec.ts) | `npm run test:api` |
-| E2E | Cucumber + Playwright | [e2e/](e2e/) | `npm run test:e2e` |
+| E2E | Cucumber + Playwright | [e2e/](e2e/) | `npm run test:e2e` (completo) / `npm run test:e2e:ci` (como no CI, sem `@known_issue`) |
 | CI/CD | GitHub Actions | [.github/workflows/tests.yml](.github/workflows/tests.yml) | (automático no push/PR) |
 | Performance | K6 | [performance/load-test.js](performance/load-test.js) | `npm run test:perf` (carga completa) / `npm run test:perf:smoke` (smoke) |
 
@@ -26,7 +26,7 @@ Validação de status, corpo e fluxos REST (incluindo negativos), métodos GET/P
 - **Arquivo único da suíte:** [tests/api/booking.spec.ts](tests/api/booking.spec.ts) — cenários agrupados por `test.describe` (fluxo feliz, negativos de payload, autenticação/autorização, **método HTTP não suportado**). Respostas JSON positivas validam `Content-Type`; DELETE 201 valida `application/json` ou `text/plain`.
 - **Base URL:** definida em [e2e/support/config.ts](e2e/support/config.ts) como `API_BASE_URL` e referenciada no [playwright.config.ts](playwright.config.ts) (`baseURL`).
 - **Relatório HTML:** gerado em `test-output/playwright-report/` (configuração do reporter em `playwright.config.ts`). **JSON:** `test-output/playwright-report/results.json` — usado pelo Job Summary da CI (métricas e tabela de falhas). Artefatos de falha da API em `test-output/test-results/` (`outputDir`).
-- **Credenciais inválidas em `POST /auth`:** a Restful-Booker responde **HTTP 200** com `{"reason":"Bad credentials"}` em vez de **401** (RFC). O teste **exige status 401**; com a API pública atual a suíte fica em **11 passando e 1 falhando**, documentando o bug. Ver [docs/API_TESTS.md](docs/API_TESTS.md).
+- **Credenciais inválidas em `POST /auth`:** a Restful-Booker responde **HTTP 200** com `{"reason":"Bad credentials"}` em vez de **401** (RFC). O teste **exige status 401** e está em **`test.fixme`** para não bloquear o CI; o relatório Playwright mostra **fixme** e o bug continua documentado. Ver [docs/API_TESTS.md](docs/API_TESTS.md).
 
 ### Onde aprofundar
 [docs/API_TESTS.md](docs/API_TESTS.md) — estrutura dos testes, como abrir o relatório, convenções.
@@ -42,7 +42,7 @@ Login (positivo/negativo), navegação, checkout (incluindo negativos), BDD com 
 - **Features:** [e2e/features/](e2e/features/) — `login.feature`, `checkout.feature`, `navegacao.feature`.
 - **Step definitions:** [e2e/steps/](e2e/steps/) — amarram Gherkin ao Playwright.
 - **Page Objects:** [e2e/pages/](e2e/pages/) — `LoginPage`, `CheckoutPage`, `ProductsPage` (locators e ações encapsulados).
-- **Checkout cartão inválido:** o cenário **não** usa mock de API; exige que o pedido **não** seja confirmado e que haja mensagem de erro. No Automation Exercise o pedido é confirmado — o teste **falha** e expõe a limitação do site (paralelo ao teste de `POST /auth` que espera 401).
+- **Checkout cartão inválido:** o cenário **não** usa mock de API; exige que o pedido **não** seja confirmado e que haja mensagem de erro. No Automation Exercise o pedido pode ser confirmado — o cenário tem **`@known_issue`** e é **excluído no CI** (`npm run test:e2e:ci` com `--tags "not @known_issue"`); localmente `npm run test:e2e` ainda o executa.
 - **Hooks e browser:** [e2e/support/hooks.ts](e2e/support/hooks.ts) — browser Chromium, trace em falha, screenshots; pastas sob `test-output/` (screenshots, traces, videos, relatório Cucumber).
 - **Configuração Cucumber:** [cucumber.js](cucumber.js) — `paths` e `require` apontando para `e2e/`.
 - **Ajuste de estabilidade:** subcategorias na página de produtos podem ter mais de um link com o mesmo texto no DOM; o clique usa o **primeiro link visível** (ver `ProductsPage.clickSubcategory`) para evitar falha intermitente.
@@ -68,14 +68,14 @@ Pipeline que execute testes após commits, com visibilidade dos resultados.
 - **Triggers:** push em qualquer branch; pull request para `main`.
 - **Três jobs em paralelo:**
   1. **api-tests** — `npm ci`, `npm run test:api`, upload do artifact **api-report** (`test-output/playwright-report/`).
-  2. **e2e-tests** — `npm ci`, Playwright Chromium, `npm run test:e2e` (Cucumber + dashboard) → artifact **e2e-report** só com `test-output/cucumber-html-report/` (o JSON em `reports/` fica no runner para o Job Summary, sem repetir no zip). Se a suíte falhar, artifact **e2e-failure-evidence** (traces, screenshots, videos).
+  2. **e2e-tests** — `npm ci`, Playwright Chromium, `npm run test:e2e:ci` (Cucumber sem `@known_issue` + dashboard) → artifact **e2e-report** só com `test-output/cucumber-html-report/` (o JSON em `reports/` fica no runner para o Job Summary, sem repetir no zip). Se a suíte falhar, artifact **e2e-failure-evidence** (traces, screenshots, videos).
   3. **performance-tests** — instalação do K6 (`grafana/setup-k6-action`), `npm run test:perf:smoke` (10 VUs, 30 s) para validar o script em CI sem o custo da carga completa.
 - **Job Summary (painel da execução):** [.github/scripts/render-job-summary.sh](.github/scripts/render-job-summary.sh) escreve Markdown em `GITHUB_STEP_SUMMARY` (variável injetada pelo runner). O workflow grava o **exit code real** do comando de teste em `.job-exit-code`; o script usa isso para o badge (**Run: success** / falhou) e monta o conteúdo por tipo de suíte (`api`, `e2e`, `k6`).
   - **Métricas (API e E2E):** seção `### Metricas` com a **mesma** tabela: **Pass rate (%)** na primeira coluna, depois **Total**, **Passaram**, **Falharam**, **Duração** (na API, duração em ms a partir do `results.json` do Playwright; no E2E, texto de duração extraído do log do Cucumber quando existir, senão `n/d`).
   - **API:** lê `test-output/playwright-report/results.json` — após as métricas, tabela **Por grupo e teste**; seção **Falhas (cenario, esperado e encontrado)** para testes com falha (`ok: false`), com **esperado** e **encontrado** extraídos da mensagem de erro (ex.: `Expected: 401` / `Received: 200`). Bloco expansível com final do log da suíte.
   - **E2E:** lê `test-output/reports/cucumber-results.json` — tabela por feature/cenário; **Falhas (cenario, step e log)** para steps com `result.status == "failed"` (feature, cenário, texto do step, `error_message`). Bloco expansível com final do log.
   - **K6 (smoke):** trecho de métricas a partir da linha que contém `RESULTADO DO TESTE` no log; `<details>` com **log completo** da execução.
-- Os steps de teste usam `continue-on-error: true` para **ainda assim** publicar artifacts e Job Summary quando houver falha.
+- Os steps de teste **falham** o job se os testes falharem (gate real); Job Summary e uploads usam `if: always()` para publicar relatórios mesmo com falha.
 - **Artifacts:** baixáveis na aba **Actions** da execução (instruções no README, seção CI/CD).
 
 ---
@@ -110,7 +110,8 @@ Carga elevada (ex.: 500 usuários sustentados), métricas, análise e relatório
 npm install
 npx playwright install chromium   # necessário para E2E
 npm run test:api
-npm run test:e2e
+npm run test:e2e          # 10 cenários (inclui @known_issue)
+npm run test:e2e:ci       # 9 cenários — igual ao CI
 # opcional: K6 instalado
 npm run test:perf:smoke           # rápido
 npm run test:perf                 # carga completa (~7 min)

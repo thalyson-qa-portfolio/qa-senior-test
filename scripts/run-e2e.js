@@ -7,10 +7,11 @@ const { generateReport } = require('./generate-cucumber-html-report');
 const cwd = path.join(__dirname, '..');
 const extraArgs = process.argv.slice(2);
 
+// shell: false — com shell: true o espaço em --tags "not @known_issue" partia o argumento e @known_issue virava path de feature (ENOENT).
 const result = spawnSync('npx', ['cucumber-js', ...extraArgs], {
   cwd,
   stdio: 'inherit',
-  shell: true,
+  shell: false,
 });
 
 generateReport();
