@@ -10,7 +10,8 @@
     "test": "npm run test:api && npm run test:e2e:ci",
     "test:all": "npm run test:api && npm run test:e2e",
     "test:perf": "k6 run performance/load-test.js",
-    "test:perf:smoke": "k6 run --vus 10 --duration 30s performance/load-test.js"
+    "test:perf:smoke": "k6 run --vus 10 --duration 30s performance/load-test.js",
+    "test:perf:smoke:ci": "mkdir -p test-output/k6 && k6 run --vus 10 --duration 30s --out json=test-output/k6/k6-results.json --summary-export=test-output/k6/k6-summary.json performance/load-test.js"
   },
   "keywords": [],
   "author": "",

@@ -115,9 +115,35 @@ jobs:
   performance-tests:
     name: Performance Tests (K6 smoke)
     runs-on: ubuntu-latest
+    # Smoke fixo no npm: 10 VUs, 30s + JSON/summary em test-output/k6/
+    # Variables opcionais (mesmos nomes que load-test.js): vazio = default do script.
+    # Nota: --vus/--duration no comando sobrepõem stages; URL/sleep/thresholds via env ainda aplicam.
+    env:
+      K6_BASE_URL: ${{ vars.K6_BASE_URL }}
+      K6_RAMP_DURATION: ${{ vars.K6_RAMP_DURATION }}
+      K6_LOAD_DURATION: ${{ vars.K6_LOAD_DURATION }}
+      K6_RAMP_DOWN_DURATION: ${{ vars.K6_RAMP_DOWN_DURATION }}
+      K6_TARGET_VUS: ${{ vars.K6_TARGET_VUS }}
+      K6_VUS: ${{ vars.K6_VUS }}
+      K6_SLEEP_S: ${{ vars.K6_SLEEP_S }}
+      K6_P95_MS: ${{ vars.K6_P95_MS }}
+      K6_HTTP_FAIL_RATE_MAX: ${{ vars.K6_HTTP_FAIL_RATE_MAX }}
+      K6_ERRORS_RATE_MAX: ${{ vars.K6_ERRORS_RATE_MAX }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare K6 output directory
+        run: mkdir -p test-output/k6
 
       - name: Setup K6
         uses: grafana/setup-k6-action@v1
@@ -126,7 +152,7 @@ jobs:
         run: |
           set -o pipefail
           set +e
-          npm run test:perf:smoke 2>&1 | tee k6-output.txt
+          npm run test:perf:smoke:ci 2>&1 | tee k6-output.txt
           code=${PIPESTATUS[0]}
           echo "$code" > .job-exit-code
           exit "$code"
@@ -134,3 +160,14 @@ jobs:
       - name: Performance Test Summary
         if: always()
         run: bash .github/scripts/render-job-summary.sh k6 k6-output.txt
+
+      - name: Upload K6 report artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k6-report
+          path: |
+            k6-output.txt
+            test-output/k6/
+          if-no-files-found: ignore
+          retention-days: 30

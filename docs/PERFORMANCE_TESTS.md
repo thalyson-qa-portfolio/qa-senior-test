@@ -35,7 +35,36 @@ Este documento descreve os testes de performance (carga) do projeto, implementad
 |---------|-----------|
 | `performance/load-test.js` | Script K6 principal |
 
-**Integracao CI:** o workflow em `.github/workflows/tests.yml` inclui o job `performance-tests`, que roda `npm run test:perf:smoke` (10 VUs, 30 s) em todo push/PR. O cenario completo (500 VUs, ~7 min) continua apenas localmente via `npm run test:perf`.
+### Variaveis de ambiente (`__ENV`)
+
+O script le parametros via **`__ENV`** (passar com `k6 run -e CHAVE=valor` ou `export` antes do comando). Valores por defeito mantem o cenario original (500 VUs, ~7 min, test.k6.io).
+
+| Variavel | Default | Descricao |
+|----------|---------|-----------|
+| `K6_BASE_URL` | `https://test.k6.io` | Origem HTTP (sem barra final) |
+| `K6_RAMP_DURATION` | `1m` | Duracao ramp-up |
+| `K6_LOAD_DURATION` | `5m` | Platô de carga |
+| `K6_RAMP_DOWN_DURATION` | `1m` | Ramp-down |
+| `K6_TARGET_VUS` | `500` | VUs alvo no platô |
+| `K6_VUS` | (usa `K6_TARGET_VUS`) | Alias opcional de VUs (se `K6_TARGET_VUS` estiver vazio, vale este) |
+| `K6_SLEEP_S` | `1` | Pausa em segundos entre passos dentro de cada iteracao |
+| `K6_P95_MS` | `2000` | Limite do threshold `http_req_duration` (p95) |
+| `K6_HTTP_FAIL_RATE_MAX` | `0.1` | Limite max. da taxa de falha HTTP |
+| `K6_ERRORS_RATE_MAX` | `0.1` | Limite max. da taxa da metrica customizada `errors` |
+
+Exemplo (so altera URL, mantem o resto):
+
+```bash
+k6 run -e K6_BASE_URL=https://test.k6.io performance/load-test.js
+```
+
+### GitHub Actions (Variables do repositorio)
+
+No repositorio: **Settings → Secrets and variables → Actions → Variables**. Use **o mesmo nome** das variaveis `K6_*` da tabela. O job `performance-tests` em [`.github/workflows/tests.yml`](../.github/workflows/tests.yml) passa `vars.K6_*` para o processo do K6. **Nao e obrigatorio** cadastrar nada: se a variable nao existir ou estiver vazia, o script usa os **defaults** da tabela.
+
+**Nota (CI smoke):** o comando `npm run test:perf:smoke:ci` usa **`--vus 10 --duration 30s`**, o que **sobrepõe** os `stages` do script. No CI, as variables ajustam sobretudo **URL**, **sleep** e **thresholds**; ramp/load/VUs do script **nao** governam essa execução. Para usar **stages** e VUs por env, corre localmente `npm run test:perf` ou `k6 run -e ... performance/load-test.js` **sem** `--vus`/`--duration` na CLI.
+
+**Integracao CI:** **Node 20**, `npm ci`, K6 (`grafana/setup-k6-action`), **`npm run test:perf:smoke:ci`** — smoke fixo (10 VUs, 30 s) com **`--out json=test-output/k6/k6-results.json`** e **`--summary-export=test-output/k6/k6-summary.json`**. O artifact **`k6-report`** inclui `k6-output.txt` (stdout) e `test-output/k6/`. O job **falha** se o K6 sair com codigo != 0 (threshold ou erro). **Validação:** na execução em Actions, verifica o step verde/vermelho; baixa **k6-report** e confere `k6-summary.json` / `k6-results.json`. O cenario completo (500 VUs, ~7 min) continua tipicamente local via `npm run test:perf`.
 
 ### Stages (perfil de carga)
 
@@ -49,12 +78,14 @@ Este documento descreve os testes de performance (carga) do projeto, implementad
 
 ### Endpoints exercitados
 
-| Metodo | URL | Proposito |
-|--------|-----|-----------|
-| GET | `https://test.k6.io/` | Pagina inicial |
-| GET | `https://test.k6.io/contacts.php` | Simula leitura de recurso (lista) |
+Os paths sao relativos a `K6_BASE_URL` (padrao `https://test.k6.io`).
 
-Entre cada request ha `sleep(1)` para simular tempo de pensamento do usuario.
+| Metodo | Path | Proposito |
+|--------|------|-----------|
+| GET | `/` | Pagina inicial |
+| GET | `/contacts.php` | Simula leitura de recurso (lista) |
+
+Entre cada request ha pausa configuravel (`K6_SLEEP_S`, padrao 1 s).
 
 ### Thresholds (SLA do teste)
 
@@ -96,6 +127,14 @@ npm run test:perf:smoke
 ```
 
 Equivale a aproximadamente 10 VUs por 30 segundos (nao substitui o cenario de 500 VUs / 5 min).
+
+**Mesmo comando que o CI** (gera JSON + summary em `test-output/k6/`):
+
+```bash
+npm run test:perf:smoke:ci
+```
+
+Os ficheiros ficam em `test-output/k6/` (pasta ignorada pelo Git com o resto de `test-output/`).
 
 ### Exportar JSON para analise externa
 

@@ -268,7 +268,9 @@ npx playwright show-trace test-output/traces/<nome-do-cenario>.zip
 
 ### Relatorio de carga (K6)
 
-O K6 imprime um resumo no terminal ao final de `npm run test:perf`. Para exportar JSON:
+O K6 imprime um resumo no terminal ao final de `npm run test:perf`. **URL, stages, thresholds e pausa** podem ser ajustados por variáveis `K6_*` (`__ENV`); ver tabela em [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md).
+
+Para exportar JSON:
 
 ```bash
 k6 run --out json=performance/k6-results.json performance/load-test.js
@@ -293,9 +295,11 @@ O projeto inclui pipeline de integracao continua que executa automaticamente:
 |-----|-----------|---------|
 | `api-tests` | Executa testes de API | ~1 min |
 | `e2e-tests` | E2E com Chromium (`test:e2e:ci` — sem `@known_issue`) | ~2-3 min |
-| `performance-tests` | K6 smoke (`npm run test:perf:smoke`, 10 VUs / 30s) | ~1 min |
+| `performance-tests` | K6 smoke (`test:perf:smoke:ci`, 10 VUs / 30s) + Node 20 / `npm ci` | ~1–2 min |
 
 A carga completa (500 VUs, varios minutos) continua apenas localmente via `npm run test:perf`; o CI valida o script e o alvo com execucao leve.
+
+Opcionalmente, podes definir **Variables** no GitHub (`Settings → Actions → Variables`) com nomes `K6_*` — o workflow injeta-as no job de performance; ver [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md).
 
 **Gate:** se algum teste falhar, o job correspondente **falha** (vermelho no PR). Job Summary e upload de artifacts usam `if: always()`, entao relatorios e evidencias continuam gerados mesmo com falha.
 
@@ -308,6 +312,7 @@ Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub
 | `api-report` | `test-output/playwright-report/` |
 | `e2e-report` | Dashboard E2E (`cucumber-html-report/` — abrir `index.html`) |
 | `e2e-failure-evidence` | Só se algum cenario falhar: traces (`.zip`), screenshots, videos |
+| `k6-report` | Log da execução (`k6-output.txt`) + `test-output/k6/k6-results.json` (métricas) e `k6-summary.json` (resumo) |
 
 **Como acessar:**
 1. Va para a aba "Actions" no GitHub
