@@ -24,7 +24,7 @@ Validação de status, corpo e fluxos REST (incluindo negativos), métodos GET/P
 
 ### Como foi resolvido
 - **Arquivo único da suíte:** [tests/api/booking.spec.ts](tests/api/booking.spec.ts) — cenários agrupados por `test.describe` (fluxo feliz, negativos de payload, autenticação/autorização, **método HTTP não suportado**). Respostas JSON positivas validam `Content-Type`; DELETE 201 valida `application/json` ou `text/plain`.
-- **Base URL:** definida em [e2e/support/config.ts](e2e/support/config.ts) como `API_BASE_URL` e referenciada no [playwright.config.ts](playwright.config.ts) (`baseURL`).
+- **Base URL:** [e2e/support/config.ts](e2e/support/config.ts) exporta `API_BASE_URL` a partir de `process.env.API_BASE_URL` (default Restful-Booker), com `dotenv`; referenciada no [playwright.config.ts](playwright.config.ts) (`baseURL`).
 - **Relatório HTML:** gerado em `test-output/playwright-report/` (configuração do reporter em `playwright.config.ts`). **JSON:** `test-output/playwright-report/results.json` — usado pelo Job Summary da CI (métricas e tabela de falhas). Artefatos de falha da API em `test-output/test-results/` (`outputDir`).
 - **Credenciais inválidas em `POST /auth`:** a Restful-Booker responde **HTTP 200** com `{"reason":"Bad credentials"}` em vez de **401** (RFC). O teste **exige status 401** e está em **`test.fixme`** para não bloquear o CI; o relatório Playwright mostra **fixme** e o bug continua documentado. Ver [docs/API_TESTS.md](docs/API_TESTS.md).
 
@@ -40,6 +40,7 @@ Login (positivo/negativo), navegação, checkout (incluindo negativos), BDD com 
 
 ### Como foi resolvido
 - **Features:** [e2e/features/](e2e/features/) — `login.feature`, `checkout.feature`, `navegacao.feature`.
+- **URLs E2E:** [e2e/support/config.ts](e2e/support/config.ts) — `E2E_BASE_URL` via `process.env` (default Automation Exercise), mesmo módulo que `API_BASE_URL` e `import 'dotenv/config'`.
 - **Step definitions:** [e2e/steps/](e2e/steps/) — amarram Gherkin ao Playwright.
 - **Page Objects:** [e2e/pages/](e2e/pages/) — `LoginPage`, `CheckoutPage`, `ProductsPage` (locators e ações encapsulados).
 - **Checkout cartão inválido:** o cenário **não** usa mock de API; exige que o pedido **não** seja confirmado e que haja mensagem de erro. No Automation Exercise o pedido pode ser confirmado — o cenário tem **`@known_issue`** e é **excluído no CI** (`npm run test:e2e:ci` com `--tags "not @known_issue"`); localmente `npm run test:e2e` ainda o executa.
@@ -98,9 +99,9 @@ Carga elevada (ex.: 500 usuários sustentados), métricas, análise e relatório
 | Decisão | Motivo |
 |---------|--------|
 | Suíte E2E sob `e2e/` | Separação clara de features, steps, pages e support; `cucumber.js` centralizado na raiz. |
-| URLs em `e2e/support/config.ts` | Um arquivo para `API_BASE_URL` e `E2E_BASE_URL`; Playwright de API importa o mesmo módulo. |
+| URLs em `e2e/support/config.ts` | `API_BASE_URL` e `E2E_BASE_URL` via `process.env` (defaults nos testes públicos); `import 'dotenv/config'` carrega `.env` na raiz. |
 | Saídas em `test-output/` (gitignored) | Relatórios e evidências não versionados; caminhos alinhados entre Playwright, Cucumber e hooks. |
-| `.env.example` | Documenta variáveis usadas pelos hooks E2E (`HEADLESS`, `SLOWMO`, `VIDEO`); o projeto **não** carrega `.env` automaticamente (ver comentários no arquivo). |
+| `.env.example` | Documenta `API_BASE_URL`, `E2E_BASE_URL` e hooks E2E (`HEADLESS`, `SLOWMO`, `VIDEO`); `config.ts` carrega `.env` via `dotenv`. |
 
 ---
 

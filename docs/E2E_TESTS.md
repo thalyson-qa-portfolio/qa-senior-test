@@ -76,7 +76,7 @@ qa-senior-test/
 │   │   ├── CheckoutPage.ts
 │   │   └── ProductsPage.ts
 │   └── support/
-│       ├── config.ts            # URL base E2E e constantes
+│       ├── config.ts            # E2E_BASE_URL / API_BASE_URL (env + dotenv)
 │       └── hooks.ts             # Hooks do Cucumber (Before/After)
 └── test-output/                 # Relatórios e evidências (gerados)
 ```
@@ -136,7 +136,7 @@ O Page Object Pattern centraliza locators e ações de cada página.
 
 ```typescript
 import { Page } from '@playwright/test';
-import { BASE_URL } from '../support/config';
+import { E2E_BASE_URL } from '../support/config';
 
 export class LoginPage {
   // 1. Locators centralizados
@@ -235,7 +235,7 @@ Em vez de criar usuário via UI (lento), usamos API.
 
 ```typescript
 async createAccountViaAPI(email: string, password: string) {
-  await this.page.request.post(`${BASE_URL}/api/createAccount`, {
+  await this.page.request.post(`${E2E_BASE_URL}/api/createAccount`, {
     form: {
       name: 'Usuario Teste',
       email,
@@ -257,12 +257,9 @@ async createAccountViaAPI(email: string, password: string) {
 
 ### 7. Configuração Centralizada
 
-```typescript
-// e2e/support/config.ts
-export const BASE_URL = 'https://automationexercise.com';
-```
+Ficheiro real: [`e2e/support/config.ts`](../e2e/support/config.ts) — `import 'dotenv/config'` e `E2E_BASE_URL` a partir de `process.env.E2E_BASE_URL` (default `https://automationexercise.com`).
 
-**Benefício:** URL em um lugar só. Se mudar (staging, prod), altera uma linha.
+**Benefício:** URLs centralizadas; override com `.env` ou `export E2E_BASE_URL=...` para staging/outro ambiente.
 
 ---
 
@@ -397,7 +394,7 @@ npx playwright show-trace test-output/traces/<nome_do_cenario>.zip
 | DRY (Don't Repeat Yourself) | Locators centralizados |
 | Testes independentes | Cada cenário cria seus dados |
 | API para setup | `createAccountViaAPI()` |
-| Configuração centralizada | `config.ts` com BASE_URL |
+| Configuração centralizada | `config.ts` com `E2E_BASE_URL` (e `API_BASE_URL` para API) |
 | Debugging | Traces, screenshots, headed mode |
 | BDD | Gherkin em português |
 

@@ -85,12 +85,13 @@ test.describe('Testes negativos - Método HTTP não suportado', () => {...});
 
 ```typescript
 import { defineConfig } from '@playwright/test';
+import { API_BASE_URL } from './e2e/support/config';
 
 export default defineConfig({
   testDir: './tests',           // Pasta onde estão os testes
   timeout: 30000,               // Timeout de 30s por teste
   use: {
-    baseURL: 'https://restful-booker.herokuapp.com', // URL base da API
+    baseURL: API_BASE_URL,      // de e2e/support/config.ts (API_BASE_URL / process.env)
     extraHTTPHeaders: {
       'Accept': 'application/json', // Header padrão em todas requisições
     },

@@ -31,7 +31,7 @@ O repositório agrupa **três suítes** com pastas claras:
 | E2E | `e2e/` | Cucumber + Playwright |
 | Performance | `performance/` | K6 |
 
-Configurações compartilhadas entre API (Playwright) e E2E ficam em `e2e/support/config.ts` (URLs `API_BASE_URL` e `E2E_BASE_URL`).
+Configurações compartilhadas entre API (Playwright) e E2E ficam em `e2e/support/config.ts` (`API_BASE_URL` e `E2E_BASE_URL` via `process.env`, com defaults; ver secção **Variáveis de ambiente** abaixo).
 
 ```
 qa-senior-test/
@@ -102,16 +102,27 @@ cd qa-senior-test
 npm install
 ```
 
-3. Instale os browsers do Playwright:
+3. (Opcional) URLs por ambiente — copie `.env.example` para `.env` na raiz e ajuste `API_BASE_URL` / `E2E_BASE_URL` se precisar de outro alvo. O ficheiro `.env` é carregado automaticamente ao importar `e2e/support/config.ts` (Playwright e Cucumber). Sem `.env`, usam-se os defaults (Restful-Booker e Automation Exercise).
+
+4. Instale os browsers do Playwright:
 ```bash
 npx playwright install chromium
 ```
 
-4. (Opcional) Para testes de carga, instale o [K6](https://k6.io/docs/get-started/installation/):
+5. (Opcional) Para testes de carga, instale o [K6](https://k6.io/docs/get-started/installation/):
 ```bash
 brew install k6   # macOS
 k6 version
 ```
+
+### Variáveis de ambiente (URLs)
+
+| Variável | Default (se omitida) | Uso |
+|----------|----------------------|-----|
+| `API_BASE_URL` | `https://restful-booker.herokuapp.com` | Testes de API (Playwright `baseURL` em `playwright.config.ts`) |
+| `E2E_BASE_URL` | `https://automationexercise.com` | Navegação e requests E2E (Cucumber + Playwright) |
+
+Definição: ficheiro **`.env`** na raiz (ver [`.env.example`](.env.example)) ou `export VAR=valor` no shell. Variáveis já definidas no ambiente têm precedência sobre o `.env` (comportamento do `dotenv`). Leitura central em [`e2e/support/config.ts`](e2e/support/config.ts).
 
 ---
 
