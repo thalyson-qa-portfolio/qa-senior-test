@@ -285,6 +285,8 @@ O projeto inclui pipeline de integracao continua que executa automaticamente:
 
 A carga completa (500 VUs, varios minutos) continua apenas localmente via `npm run test:perf`; o CI valida o script e o alvo com execucao leve.
 
+**Gate:** se algum teste falhar, o job correspondente **falha** (vermelho no PR). Job Summary e upload de artifacts usam `if: always()`, entao relatorios e evidencias continuam gerados mesmo com falha.
+
 ### Artifacts (Relatorios)
 
 Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub:
