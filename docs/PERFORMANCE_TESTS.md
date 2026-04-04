@@ -60,11 +60,11 @@ k6 run -e K6_BASE_URL=https://test.k6.io performance/load-test.js
 
 ### GitHub Actions (Variables do repositorio)
 
-No repositorio: **Settings → Secrets and variables → Actions → Variables**. Use **o mesmo nome** das variaveis `K6_*` da tabela. O job `performance-tests` em [`.github/workflows/tests.yml`](../.github/workflows/tests.yml) passa `vars.K6_*` para o processo do K6. **Nao e obrigatorio** cadastrar nada: se a variable nao existir ou estiver vazia, o script usa os **defaults** da tabela.
+No repositorio: **Settings → Secrets and variables → Actions → Variables**. Use **o mesmo nome** das variaveis `K6_*` da tabela. O job `performance-tests` em [`.github/workflows/tests.yml`](../.github/workflows/tests.yml) passa `vars.K6_*` para o processo do K6 (valores vazios usam os defaults do workflow ou do script, conforme a linha). O comando `npm run test:perf:smoke:ci` **nao** usa `--vus`/`--duration`: o perfil vem dos **`stages`** em `load-test.js`, alimentados por estas variables.
 
-**Nota (CI smoke):** o comando `npm run test:perf:smoke:ci` usa **`--vus 10 --duration 30s`**, o que **sobrepõe** os `stages` do script. No CI, as variables ajustam sobretudo **URL**, **sleep** e **thresholds**; ramp/load/VUs do script **nao** governam essa execução. Para usar **stages** e VUs por env, corre localmente `npm run test:perf` ou `k6 run -e ... performance/load-test.js` **sem** `--vus`/`--duration` na CLI.
+**Defaults no CI (quando uma variable nao existe):** o workflow preenche `K6_RAMP_DURATION=5s`, `K6_LOAD_DURATION=20s`, `K6_RAMP_DOWN_DURATION=5s` e `K6_TARGET_VUS=10` (smoke curto, ~30 s no total). Para o cenario do desafio (500 VUs, ~7 min), define no GitHub as variables com os valores da tabela (ex. `1m` / `5m` / `1m`, `500`) ou corre localmente `npm run test:perf` sem variables.
 
-**Integracao CI:** **Node 20**, `npm ci`, K6 (`grafana/setup-k6-action`), **`npm run test:perf:smoke:ci`** — smoke fixo (10 VUs, 30 s) com **`--out json=test-output/k6/k6-results.json`** e **`--summary-export=test-output/k6/k6-summary.json`**. O artifact **`k6-report`** inclui `k6-output.txt` (stdout) e `test-output/k6/`. O job **falha** se o K6 sair com codigo != 0 (threshold ou erro). **Validação:** na execução em Actions, verifica o step verde/vermelho; baixa **k6-report** e confere `k6-summary.json` / `k6-results.json`. O cenario completo (500 VUs, ~7 min) continua tipicamente local via `npm run test:perf`.
+**Integracao CI:** **Node 20**, `npm ci`, K6 (`grafana/setup-k6-action`), **`npm run test:perf:smoke:ci`** com **`--out json=test-output/k6/k6-results.json`** e **`--summary-export=test-output/k6/k6-summary.json`**. O artifact **`k6-report`** inclui `k6-output.txt` (stdout) e `test-output/k6/`. O job **falha** se o K6 sair com codigo != 0. **Validação:** na execução em Actions, verifica o step verde/vermelho; baixa **k6-report** e confere `k6-summary.json` / `k6-results.json`.
 
 ### Stages (perfil de carga)
 
@@ -126,7 +126,7 @@ k6 run performance/load-test.js
 npm run test:perf:smoke
 ```
 
-Equivale a aproximadamente 10 VUs por 30 segundos (nao substitui o cenario de 500 VUs / 5 min).
+Usa os **defaults do script** (500 VUs, ~7 min) salvo `export`/`k6 run -e` com outros `K6_*`. Para smoke curto local, passa por exemplo `-e K6_TARGET_VUS=10` e durações curtas.
 
 **Mesmo comando que o CI** (gera JSON + summary em `test-output/k6/`):
 

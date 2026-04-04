@@ -10,7 +10,7 @@ import { Rate, Trend } from 'k6/metrics';
 // | K6_LOAD_DURATION    | Platô (duracao principal / "duration" do cenario) |
 // | K6_RAMP_DOWN_DURATION | Ramp-down |
 // | K6_SLEEP_S, K6_P95_MS, K6_HTTP_FAIL_RATE_MAX, K6_ERRORS_RATE_MAX | ver tabela na doc |
-// Smoke no CI usa --vus/--duration no npm e pode ignorar estes stages.
+// CI injeta K6_* via GitHub Variables (workflow). Sem --vus/--duration no npm: stages aplicam-se.
 
 function envStr(key, defaultVal) {
   const v = __ENV[key];

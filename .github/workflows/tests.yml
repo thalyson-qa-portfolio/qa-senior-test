@@ -115,15 +115,14 @@ jobs:
   performance-tests:
     name: Performance Tests (K6 smoke)
     runs-on: ubuntu-latest
-    # Smoke fixo no npm: 10 VUs, 30s + JSON/summary em test-output/k6/
-    # Variables opcionais (mesmos nomes que load-test.js): vazio = default do script.
-    # Nota: --vus/--duration no comando sobrepõem stages; URL/sleep/thresholds via env ainda aplicam.
+    # Stages via env (GitHub Variables). Sem --vus/--duration no npm.
+    # Variable ausente: defaults abaixo (~30s total, 10 VUs). Defina no GitHub o perfil desejado (ex. 1m/5m/1m e 500).
     env:
       K6_BASE_URL: ${{ vars.K6_BASE_URL }}
-      K6_RAMP_DURATION: ${{ vars.K6_RAMP_DURATION }}
-      K6_LOAD_DURATION: ${{ vars.K6_LOAD_DURATION }}
-      K6_RAMP_DOWN_DURATION: ${{ vars.K6_RAMP_DOWN_DURATION }}
-      K6_TARGET_VUS: ${{ vars.K6_TARGET_VUS }}
+      K6_RAMP_DURATION: ${{ vars.K6_RAMP_DURATION || '5s' }}
+      K6_LOAD_DURATION: ${{ vars.K6_LOAD_DURATION || '20s' }}
+      K6_RAMP_DOWN_DURATION: ${{ vars.K6_RAMP_DOWN_DURATION || '5s' }}
+      K6_TARGET_VUS: ${{ vars.K6_TARGET_VUS || vars.K6_VUS || '10' }}
       K6_VUS: ${{ vars.K6_VUS }}
       K6_SLEEP_S: ${{ vars.K6_SLEEP_S }}
       K6_P95_MS: ${{ vars.K6_P95_MS }}

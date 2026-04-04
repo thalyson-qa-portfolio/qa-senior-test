@@ -4,7 +4,7 @@ Projeto de automação de testes desenvolvido como avaliação técnica para vag
 
 ### Resumo para o avaliador
 
-Os mesmos serviços públicos têm **comportamentos documentados** que não batem com o contrato ideal: **POST /auth** com credenciais inválidas deveria retornar **401**, mas a Restful-Booker responde **200**; no E2E, **checkout com cartão inválido** deveria recusar com mensagem, mas o Automation Exercise pode confirmar o pedido. Esses casos estão **em quarentena no CI** (`test.fixme` na API; tag `@known_issue` excluída no E2E com `npm run test:e2e:ci`) para o pipeline permanecer verde e confiável; a suíte **completa** localmente continua em [docs/API_TESTS.md](docs/API_TESTS.md) e [docs/E2E_TESTS.md](docs/E2E_TESTS.md). No **CI**, o job de performance executa apenas o **smoke** K6 (10 VUs, 30 s); o perfil completo (**500 VUs**, platô **5 min**, **~7 min** no total com ramp-up/down) está em [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md), executável com `npm run test:perf`.
+Os mesmos serviços públicos têm **comportamentos documentados** que não batem com o contrato ideal: **POST /auth** com credenciais inválidas deveria retornar **401**, mas a Restful-Booker responde **200**; no E2E, **checkout com cartão inválido** deveria recusar com mensagem, mas o Automation Exercise pode confirmar o pedido. Esses casos estão **em quarentena no CI** (`test.fixme` na API; tag `@known_issue` excluída no E2E com `npm run test:e2e:ci`) para o pipeline permanecer verde e confiável; a suíte **completa** localmente continua em [docs/API_TESTS.md](docs/API_TESTS.md) e [docs/E2E_TESTS.md](docs/E2E_TESTS.md). No **CI**, o job de performance corre **`test:perf:smoke:ci`** com perfil definido por **GitHub Variables** `K6_*` (defaults leves no workflow se não definires nada); o cenario completo do desafio (**500 VUs**, ~**7 min**) está descrito em [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md), executável com `npm run test:perf` ou com variables ajustadas.
 
 ---
 
@@ -186,7 +186,7 @@ npm run test:perf
 
 Executa carga com **500 usuarios virtuais** (ramp-up 1 min, **5 min** em plataforma, ramp-down 1 min) contra **https://test.k6.io** (API publica recomendada para testes de carga).
 
-Smoke rapido (validacao local, ~30 s):
+Mesmo script que stages (`npm run test:perf:smoke`); defaults = carga completa do script salvo env:
 
 ```bash
 npm run test:perf:smoke
@@ -295,7 +295,7 @@ O projeto inclui pipeline de integracao continua que executa automaticamente:
 |-----|-----------|---------|
 | `api-tests` | Executa testes de API | ~1 min |
 | `e2e-tests` | E2E com Chromium (`test:e2e:ci` — sem `@known_issue`) | ~2-3 min |
-| `performance-tests` | K6 smoke (`test:perf:smoke:ci`, 10 VUs / 30s) + Node 20 / `npm ci` | ~1–2 min |
+| `performance-tests` | K6 (`test:perf:smoke:ci`, stages via Variables; ~30s se sem vars no GitHub) + Node 20 / `npm ci` | ~1–2 min (smoke default) |
 
 A carga completa (500 VUs, varios minutos) continua apenas localmente via `npm run test:perf`; o CI valida o script e o alvo com execucao leve.
 
