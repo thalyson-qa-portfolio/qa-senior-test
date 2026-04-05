@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { expect, Locator, Page } from '@playwright/test';
 import { E2E_BASE_URL } from '../support/config';
 
 export class CheckoutPage {
@@ -22,6 +22,36 @@ export class CheckoutPage {
   private readonly payButton = 'button[data-qa="pay-button"]';
 
   constructor(private page: Page) {}
+
+  /**
+   * Escopo do fluxo de pagamento: form que contem o Pay, ou ancestral div do botao (demo sem form).
+   */
+  getPaymentScope(): Locator {
+    const pay = this.page.locator(this.payButton);
+    const formScoped = this.page.locator('form').filter({ has: pay });
+    return formScoped.first();
+  }
+
+  getPayButton() {
+    return this.page.locator(this.payButton);
+  }
+
+  getCvcInput() {
+    return this.page.locator(this.cvcInput);
+  }
+
+  getExpiryMonthInput() {
+    return this.page.locator(this.expiryMonthInput);
+  }
+
+  getExpiryYearInput() {
+    return this.page.locator(this.expiryYearInput);
+  }
+
+  /** Pedido ainda nao confirmado (cenarios negativos de pagamento). */
+  async expectOrderNotConfirmed(successText: string) {
+    await expect(this.page.getByText(successText)).not.toBeVisible();
+  }
 
   async navigateToHome() {
     await this.page.goto(E2E_BASE_URL);

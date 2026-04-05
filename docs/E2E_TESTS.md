@@ -255,6 +255,12 @@ async createAccountViaAPI(email: string, password: string) {
 
 ---
 
+### Asserts em cenários negativos
+
+Nos `Then` negativos combinamos, quando aplicável: **evidência principal** (mensagem, `required` e/ou `validity` HTML5), **permanência na rota** (`/login`, `/signup`) e **ausência do sucesso** (ex.: não aparece “Logged in as”). Em campos vazios, o browser pode validar só o primeiro inválido — o teste exige `required` onde o DOM define e que pelo menos um campo reporte `validity` inválida. No **checkout com cartão inválido**, o texto de erro é procurado **no formulário de pagamento** (menos ambiguidade); o cenário mantém **`@known_issue`** se o demo confirmar o pedido.
+
+---
+
 ### 7. Configuração Centralizada
 
 Arquivo real: [`e2e/support/config.ts`](../e2e/support/config.ts) — `import 'dotenv/config'` e `E2E_BASE_URL` a partir de `process.env.E2E_BASE_URL` (default `https://automationexercise.com`).

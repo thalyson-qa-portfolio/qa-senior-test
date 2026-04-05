@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { expect, Page } from '@playwright/test';
 import { E2E_BASE_URL } from '../support/config';
 
 export class LoginPage {
@@ -81,6 +81,25 @@ export class LoginPage {
 
   getEmailInput() {
     return this.page.locator(this.emailInput);
+  }
+
+  getPasswordInput() {
+    return this.page.locator(this.passwordInput);
+  }
+
+  /** Ainda na rota de login (HTML5 ou erro de credenciais sem redirecionar). */
+  async expectStillOnLoginPath() {
+    await expect(this.page).toHaveURL(/\/login\b/i);
+  }
+
+  /** Fluxo de cadastro em /signup apos "Signup" na pagina de login. */
+  async expectStillOnSignupPath() {
+    await expect(this.page).toHaveURL(/\/signup\b/i);
+  }
+
+  /** Estado de sucesso de login nao deve aparecer em fluxos negativos. */
+  async expectNotLoggedInUi() {
+    await expect(this.page.locator(this.loggedInMessage)).not.toBeVisible();
   }
 
   async navigateToSignup() {

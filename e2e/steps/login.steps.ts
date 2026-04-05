@@ -52,7 +52,11 @@ Then('devo ver a mensagem {string}', async (_mensagem: string) => {
 });
 
 Then('devo ver a mensagem de erro {string}', async (mensagem: string) => {
-  await expect(page.locator(`text=${mensagem}`)).toBeVisible();
+  const erro = loginPage.getErrorMessageLocator();
+  await expect(erro).toBeVisible();
+  await expect(erro).toHaveText(mensagem);
+  await loginPage.expectStillOnLoginPath();
+  await loginPage.expectNotLoggedInUi();
 });
 
 When('deixo os campos de login vazios', async () => {
@@ -61,7 +65,17 @@ When('deixo os campos de login vazios', async () => {
 });
 
 Then('devo ver erro de campo obrigatorio no login', async () => {
+  // A: inputs obrigatorios no DOM; B: permanece em /login; C: nao ha login com sucesso.
+  // HTML5: com email e senha vazios, o browser bloqueia submit; validity costuma refletir o primeiro campo invalido (email).
+  await loginPage.expectStillOnLoginPath();
+  await loginPage.expectNotLoggedInUi();
   await expect(loginPage.getEmailInput()).toHaveAttribute('required', '');
+  await expect(loginPage.getPasswordInput()).toHaveAttribute('required', '');
+  const email = loginPage.getEmailInput();
+  const senha = loginPage.getPasswordInput();
+  const emailInvalido = await email.evaluate((el: HTMLInputElement) => !el.validity.valid);
+  const senhaInvalida = await senha.evaluate((el: HTMLInputElement) => !el.validity.valid);
+  expect(emailInvalido || senhaInvalida).toBe(true);
 });
 
 Given('estou na pagina de cadastro', async () => {
@@ -82,5 +96,8 @@ When('clico em criar conta', async () => {
 });
 
 Then('devo ver erro de campo obrigatorio no endereco', async () => {
-  await expect(loginPage.getAddressInput()).toHaveAttribute('required', '');
+  await loginPage.expectStillOnSignupPath();
+  const addr = loginPage.getAddressInput();
+  await expect(addr).toHaveAttribute('required', '');
+  await expect(addr).toHaveJSProperty('validity.valueMissing', true);
 });

@@ -53,20 +53,45 @@ When('preencho os dados do cartao com numero invalido', async () => {
 });
 
 /**
- * Esperado: nao confirmar pedido e exibir erro de pagamento.
- * No Automation Exercise o pedido costuma ser confirmado com cartao invalido — cenario falha (bug visivel na automacao).
+ * Objetivo do assert: menos ambiguidade (escopo no form de pagamento), nao "corrigir" o demo.
+ * @known_issue: o site pode ainda confirmar o pedido — cenario continua instavel por bug do demo.
  */
 Then('o pagamento com cartao invalido deve ser recusado com mensagem de erro', async () => {
-  await expect(page.getByText(SUCCESS_TEXT)).not.toBeVisible({
-    timeout: 15000,
-  });
+  await checkoutPage.expectOrderNotConfirmed(SUCCESS_TEXT);
 
-  const erroPagamento = page.getByText(
-    /invalid|incorrect|declined|failed|rejected|error|could not|unable to process|payment/i,
+  const scope = checkoutPage.getPaymentScope();
+  const hasForm = (await scope.count()) > 0;
+  const alvo = hasForm
+    ? scope
+    : checkoutPage.getPayButton().locator('xpath=ancestor::div[contains(@class,"modal")][1]');
+
+  const erroNoEscopo = alvo.getByText(
+    /invalid|incorrect|declined|failed|rejected|could not|unable to process|unsuccessful|card/i,
   );
-  await expect(erroPagamento.first()).toBeVisible({ timeout: 5000 });
+  await expect(erroNoEscopo.first()).toBeVisible({ timeout: 5000 });
 });
 
 Then('devo ver erro de campos obrigatorios', async () => {
-  await expect(checkoutPage.getNameOnCardInput()).toHaveAttribute('required', '');
+  await checkoutPage.expectOrderNotConfirmed(SUCCESS_TEXT);
+  await expect(checkoutPage.getPayButton()).toBeVisible();
+
+  const nome = checkoutPage.getNameOnCardInput();
+  const numero = checkoutPage.getCardNumberInput();
+  const cvc = checkoutPage.getCvcInput();
+  const mes = checkoutPage.getExpiryMonthInput();
+  const ano = checkoutPage.getExpiryYearInput();
+
+  await expect(nome).toHaveAttribute('required', '');
+  await expect(numero).toHaveAttribute('required', '');
+  await expect(cvc).toHaveAttribute('required', '');
+  await expect(mes).toHaveAttribute('required', '');
+  await expect(ano).toHaveAttribute('required', '');
+
+  // HTML5: submit bloqueado; pelo menos um campo reporta invalido (geralmente o primeiro vazio).
+  const invalidos = await Promise.all(
+    [nome, numero, cvc, mes, ano].map((loc) =>
+      loc.evaluate((el: HTMLInputElement) => !el.validity.valid),
+    ),
+  );
+  expect(invalidos.some(Boolean)).toBe(true);
 });
