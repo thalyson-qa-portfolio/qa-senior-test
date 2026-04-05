@@ -218,9 +218,9 @@ Hooks executam código antes/depois de cada cenário. Implementação canônica:
 
 Resumo do comportamento:
 
-- **Trace:** gravação ligada em todo cenário; no **After**, se o cenário **falhou** → `tracing.stop({ path: .../*.zip })` + screenshot; se **passou** → `tracing.stop()` **sem** path (descarta o trace, evitando dezenas de `.zip` quando tudo verde).
+- **Trace:** gravação ativa em todo cenário; no **After**, se o cenário **falhou** → `tracing.stop({ path: .../*.zip })` + screenshot; se **passou** → `tracing.stop()` **sem** path (descarta o trace, evitando dezenas de `.zip` quando tudo verde).
 - **Vídeo:** só se `VIDEO=true`.
-- **CI:** artifact **e2e-report** inclui só o dashboard (`cucumber-html-report/`). O JSON em `reports/` é usado no runner pelo Job Summary e não entra no zip. Com falha, há também **e2e-failure-evidence** (traces, screenshots, videos).
+- **CI:** artifact **e2e-report** inclui só o dashboard (`cucumber-html-report/`). O JSON em `reports/` é usado no runner pelo Job Summary e não entra no zip. Com falha, há também **e2e-failure-evidence** (traces, screenshots, vídeos).
 
 **Recursos de debugging:**
 - `HEADLESS=false` - Ver browser executando
@@ -257,7 +257,7 @@ async createAccountViaAPI(email: string, password: string) {
 
 ### 7. Configuração Centralizada
 
-Ficheiro real: [`e2e/support/config.ts`](../e2e/support/config.ts) — `import 'dotenv/config'` e `E2E_BASE_URL` a partir de `process.env.E2E_BASE_URL` (default `https://automationexercise.com`).
+Arquivo real: [`e2e/support/config.ts`](../e2e/support/config.ts) — `import 'dotenv/config'` e `E2E_BASE_URL` a partir de `process.env.E2E_BASE_URL` (default `https://automationexercise.com`).
 
 **Benefício:** URLs centralizadas; override com `.env` ou `export E2E_BASE_URL=...` para staging/outro ambiente.
 

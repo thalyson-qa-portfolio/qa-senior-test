@@ -4,7 +4,7 @@ Projeto de automação de testes desenvolvido como avaliação técnica para vag
 
 ### Resumo para o avaliador
 
-Os mesmos serviços públicos têm **comportamentos documentados** que não batem com o contrato ideal: **POST /auth** com credenciais inválidas deveria retornar **401**, mas a Restful-Booker responde **200**; no E2E, **checkout com cartão inválido** deveria recusar com mensagem, mas o Automation Exercise pode confirmar o pedido. Esses casos estão **em quarentena no CI** (`test.fixme` na API; tag `@known_issue` excluída no E2E com `npm run test:e2e:ci`) para o pipeline permanecer verde e confiável; a suíte **completa** localmente continua em [docs/API_TESTS.md](docs/API_TESTS.md) e [docs/E2E_TESTS.md](docs/E2E_TESTS.md). No **CI**, o job de performance corre **`test:perf:smoke:ci`** com perfil definido por **GitHub Variables** `K6_*` (defaults leves no workflow se não definires nada); o cenario completo do desafio (**500 VUs**, ~**7 min**) está descrito em [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md), executável com `npm run test:perf` ou com variables ajustadas.
+Os mesmos serviços públicos têm **comportamentos documentados** que não batem com o contrato ideal: **POST /auth** com credenciais inválidas deveria retornar **401**, mas a Restful-Booker responde **200**; no E2E, **checkout com cartão inválido** deveria recusar com mensagem, mas o Automation Exercise pode confirmar o pedido. Esses casos estão **em quarentena no CI** (`test.fixme` na API; tag `@known_issue` excluída no E2E com `npm run test:e2e:ci`) para o pipeline permanecer verde e confiável; a suíte **completa** localmente continua em [docs/API_TESTS.md](docs/API_TESTS.md) e [docs/E2E_TESTS.md](docs/E2E_TESTS.md). No **CI**, o job de performance executa **`test:perf:smoke:ci`** com perfil definido pelas **variáveis** `K6_*` no GitHub Actions (defaults leves no workflow se você não definir nada); o cenário completo do desafio (**500 VUs**, ~**7 min**) está descrito em [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md), executável com `npm run test:perf` ou com variáveis ajustadas.
 
 ---
 
@@ -15,6 +15,7 @@ Os mesmos serviços públicos têm **comportamentos documentados** que não bate
 | Node.js | 18+ (CI: 20) | Runtime |
 | TypeScript | 6.0.2 | Linguagem |
 | Playwright | 1.58.2 | Testes de API e automação de browser |
+| Zod | 4.x | Validação de contrato JSON em endpoints selecionados (`tests/api/schemas/`) |
 | Cucumber | 11.3.0 | Framework BDD (Gherkin) |
 | ts-node | 10.9.2 | Execução de TypeScript |
 | K6 | 1.4+ (instalação separada) | Testes de carga / performance |
@@ -31,14 +32,15 @@ O repositório agrupa **três suítes** com pastas claras:
 | E2E | `e2e/` | Cucumber + Playwright |
 | Performance | `performance/` | K6 |
 
-Configurações compartilhadas entre API (Playwright) e E2E ficam em `e2e/support/config.ts` (`API_BASE_URL` e `E2E_BASE_URL` via `process.env`, com defaults; ver secção **Variáveis de ambiente** abaixo).
+Configurações compartilhadas entre API (Playwright) e E2E ficam em `e2e/support/config.ts` (`API_BASE_URL` e `E2E_BASE_URL` via `process.env`, com defaults; ver a seção **Variáveis de ambiente** abaixo).
 
 ```
 qa-senior-test/
 ├── tests/
 │   └── api/
-│       └── booking.spec.ts      # Testes de API (Restful-Booker)
-├── e2e/                         # Suite E2E (Cucumber + Playwright)
+│       ├── booking.spec.ts      # Testes de API (Restful-Booker)
+│       └── schemas/             # Schemas Zod (POST /auth, GET /booking/{id})
+├── e2e/                         # Suíte E2E (Cucumber + Playwright)
 │   ├── features/
 │   │   ├── login.feature
 │   │   ├── checkout.feature
@@ -60,11 +62,11 @@ qa-senior-test/
 │   └── PERFORMANCE_TESTS.md     # Documentação dos testes de carga (K6)
 ├── performance/
 │   └── load-test.js             # Script K6 (500 VUs, platô 5 min; ~7 min totais)
-├── test-output/                 # Saidas geradas (gitignored)
-│   ├── playwright-report/     # Relatorio HTML API (Playwright)
+├── test-output/                 # Saídas geradas (gitignored)
+│   ├── playwright-report/     # Relatório HTML API (Playwright)
 │   ├── test-results/          # Artefatos de falha API (Playwright)
-│   ├── reports/               # Relatorio HTML E2E (Cucumber) + JSON
-│   ├── cucumber-html-report/  # Dashboard HTML (pizza, features) apos test:e2e
+│   ├── reports/               # Relatório HTML E2E (Cucumber) + JSON
+│   ├── cucumber-html-report/  # Dashboard HTML (pizza, features) após test:e2e
 │   ├── screenshots/           # Falhas E2E
 │   ├── traces/                # Trace Viewer E2E
 │   └── videos/                # VIDEO=true
@@ -79,7 +81,7 @@ qa-senior-test/
 
 - **Node.js** 18 ou superior (o pipeline em GitHub Actions usa **Node 20**)
 - **npm** (incluso com Node.js)
-- **K6** 1.x (apenas para `npm run test:perf`; ver secao Instalacao, passo 4)
+- **K6** 1.x (apenas para `npm run test:perf`; ver seção Instalação, passo 4)
 
 Verificar versão instalada:
 ```bash
@@ -102,7 +104,7 @@ cd qa-senior-test
 npm install
 ```
 
-3. (Opcional) URLs por ambiente — copie `.env.example` para `.env` na raiz e ajuste `API_BASE_URL` / `E2E_BASE_URL` se precisar de outro alvo. O ficheiro `.env` é carregado automaticamente ao importar `e2e/support/config.ts` (Playwright e Cucumber). Sem `.env`, usam-se os defaults (Restful-Booker e Automation Exercise).
+3. (Opcional) URLs por ambiente — copie `.env.example` para `.env` na raiz e ajuste `API_BASE_URL` / `E2E_BASE_URL` se precisar de outro alvo. O arquivo `.env` é carregado automaticamente ao importar `e2e/support/config.ts` (Playwright e Cucumber). Sem `.env`, usam-se os defaults (Restful-Booker e Automation Exercise).
 
 4. Instale os browsers do Playwright:
 ```bash
@@ -122,7 +124,7 @@ k6 version
 | `API_BASE_URL` | `https://restful-booker.herokuapp.com` | Testes de API (Playwright `baseURL` em `playwright.config.ts`) |
 | `E2E_BASE_URL` | `https://automationexercise.com` | Navegação e requests E2E (Cucumber + Playwright) |
 
-Definição: ficheiro **`.env`** na raiz (ver [`.env.example`](.env.example)) ou `export VAR=valor` no shell. Variáveis já definidas no ambiente têm precedência sobre o `.env` (comportamento do `dotenv`). Leitura central em [`e2e/support/config.ts`](e2e/support/config.ts).
+Definição: arquivo **`.env`** na raiz (ver [`.env.example`](.env.example)) ou `export VAR=valor` no shell. Variáveis já definidas no ambiente têm precedência sobre o `.env` (comportamento do `dotenv`). Leitura central em [`e2e/support/config.ts`](e2e/support/config.ts).
 
 ---
 
@@ -161,7 +163,7 @@ code --install-extension ms-playwright.playwright
 npm run test:api
 ```
 
-Executa testes automatizados contra a API [Restful-Booker](https://restful-booker.herokuapp.com/).
+Executa testes automatizados contra a API [Restful-Booker](https://restful-booker.herokuapp.com/) (URL padrão; sobrescreva com `API_BASE_URL` no `.env`). Contrato de resposta em **POST /auth** e **GET /booking/{id}** validado com **Zod** — ver [docs/API_TESTS.md](docs/API_TESTS.md).
 
 **Cobertura:**
 - GET, POST, PUT, DELETE
@@ -195,7 +197,7 @@ npm run test:e2e:ci
 npm run test:perf
 ```
 
-Executa carga com **500 usuarios virtuais** (ramp-up 1 min, **5 min** em plataforma, ramp-down 1 min) contra **https://test.k6.io** (API publica recomendada para testes de carga).
+Executa carga com **500 usuários virtuais** (ramp-up 1 min, **5 min** de platô, ramp-down 1 min) contra **https://test.k6.io** (API pública recomendada para testes de carga).
 
 Mesmo script que stages (`npm run test:perf:smoke`); defaults = carga completa do script salvo env:
 
@@ -203,9 +205,9 @@ Mesmo script que stages (`npm run test:perf:smoke`); defaults = carga completa d
 npm run test:perf:smoke
 ```
 
-**Documentacao:** [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md)
+**Documentação:** [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md)
 
-### Todos os Testes (mesmo criterio do CI)
+### Todos os testes (mesmo critério do CI)
 
 ```bash
 npm test
@@ -277,7 +279,7 @@ Para análise detalhada de cenários E2E:
 npx playwright show-trace test-output/traces/<nome-do-cenario>.zip
 ```
 
-### Relatorio de carga (K6)
+### Relatório de carga (K6)
 
 O K6 imprime um resumo no terminal ao final de `npm run test:perf`. **URL, stages, thresholds e pausa** podem ser ajustados por variáveis `K6_*` (`__ENV`); ver tabela em [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md).
 
@@ -287,13 +289,13 @@ Para exportar JSON:
 k6 run --out json=performance/k6-results.json performance/load-test.js
 ```
 
-Detalhes e analise de uma execucao de referencia: [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md).
+Detalhes e análise de uma execução de referência: [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md).
 
 ---
 
 ## CI/CD (GitHub Actions)
 
-O projeto inclui pipeline de integracao continua que executa automaticamente:
+O projeto inclui pipeline de integração contínua que executa automaticamente:
 
 ### Triggers
 
@@ -302,34 +304,34 @@ O projeto inclui pipeline de integracao continua que executa automaticamente:
 
 ### Jobs
 
-| Job | Descricao | Duracao |
+| Job | Descrição | Duração |
 |-----|-----------|---------|
 | `api-tests` | Executa testes de API | ~1 min |
 | `e2e-tests` | E2E com Chromium (`test:e2e:ci` — sem `@known_issue`) | ~2-3 min |
 | `performance-tests` | K6 (`test:perf:smoke:ci`, stages via Variables; ~30s se sem vars no GitHub) + Node 20 / `npm ci` | ~1–2 min (smoke default) |
 
-A carga completa (500 VUs, varios minutos) continua apenas localmente via `npm run test:perf`; o CI valida o script e o alvo com execucao leve.
+A carga completa (500 VUs, vários minutos) continua apenas localmente via `npm run test:perf`; o CI valida o script e o alvo com execução leve.
 
-Opcionalmente, podes definir **Variables** no GitHub (`Settings → Actions → Variables`) com nomes `K6_*` — o workflow injeta-as no job de performance; ver [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md).
+Opcionalmente, você pode definir **variáveis** no GitHub (`Settings → Actions → Variables`) com nomes `K6_*` — o workflow injeta-as no job de performance; ver [docs/PERFORMANCE_TESTS.md](docs/PERFORMANCE_TESTS.md).
 
-**Gate:** se algum teste falhar, o job correspondente **falha** (vermelho no PR). Job Summary e upload de artifacts usam `if: always()`, entao relatorios e evidencias continuam gerados mesmo com falha.
+**Gate:** se algum teste falhar, o job correspondente **falha** (vermelho no PR). Job Summary e upload de artifacts usam `if: always()`, então relatórios e evidências continuam sendo gerados mesmo com falha.
 
-### Artifacts (Relatorios)
+### Artifacts (relatórios)
 
-Apos cada execucao, os relatorios ficam disponiveis na aba **Actions** do GitHub:
+Após cada execução, os relatórios ficam disponíveis na aba **Actions** do GitHub:
 
-| Artifact | Conteudo |
+| Artifact | Conteúdo |
 |----------|----------|
 | `api-report` | `test-output/playwright-report/` |
 | `e2e-report` | Dashboard E2E (`cucumber-html-report/` — abrir `index.html`) |
-| `e2e-failure-evidence` | Só se algum cenario falhar: traces (`.zip`), screenshots, videos |
+| `e2e-failure-evidence` | Só se algum cenário falhar: traces (`.zip`), screenshots, vídeos |
 | `k6-report` | Log da execução (`k6-output.txt`) + `test-output/k6/k6-results.json` (métricas) e `k6-summary.json` (resumo) |
 
 **Como acessar:**
-1. Va para a aba "Actions" no GitHub
-2. Clique na execucao desejada
-3. Role ate "Artifacts"
-4. Baixe o zip do relatorio
+1. Vá para a aba "Actions" no GitHub
+2. Clique na execução desejada
+3. Role até "Artifacts"
+4. Baixe o .zip do relatório
 
 ---
 

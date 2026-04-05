@@ -37,7 +37,7 @@ if [ "$TYPE" = "api" ]; then
          else 0 end) as $pr
       | "### Metricas",
         "",
-        "| Pass rate (%) | Total | Passaram | Falharam | Duração |",
+        "| Pass rate (%) | Total | Passaram | Falharam | Duracao |",
         "|:---:|:---:|:---:|:---:|:---:|",
         ("| \($pr) | \($total) | \($s.expected) | \($s.unexpected) | \($s.duration | floor) ms |"),
         ""
@@ -123,7 +123,7 @@ elif [ "$TYPE" = "e2e" ]; then
       | (if $tot > 0 then (($ok * 10000 / $tot) | round / 100) else 0 end) as $pr
       | "### Metricas",
         "",
-        "| Pass rate (%) | Total | Passaram | Falharam | Duração |",
+        "| Pass rate (%) | Total | Passaram | Falharam | Duracao |",
         "|:---:|:---:|:---:|:---:|:---:|",
         ("| \($pr) | \($tot) | \($ok) | \($bad) | \($t) |"),
         ""

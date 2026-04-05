@@ -24,6 +24,7 @@ Validação de status, corpo e fluxos REST (incluindo negativos), métodos GET/P
 
 ### Como foi resolvido
 - **Arquivo único da suíte:** [tests/api/booking.spec.ts](tests/api/booking.spec.ts) — cenários agrupados por `test.describe` (fluxo feliz, negativos de payload, autenticação/autorização, **método HTTP não suportado**). Respostas JSON positivas validam `Content-Type`; DELETE 201 valida `application/json` ou `text/plain`.
+- **Contrato de resposta (Zod):** [tests/api/schemas/](tests/api/schemas/) — validação de schema em **POST /auth** e **GET /booking/{id}** (`safeParse` + mensagem de erro com `flatten` se falhar). Ver [docs/API_TESTS.md](docs/API_TESTS.md).
 - **Base URL:** [e2e/support/config.ts](e2e/support/config.ts) exporta `API_BASE_URL` a partir de `process.env.API_BASE_URL` (default Restful-Booker), com `dotenv`; referenciada no [playwright.config.ts](playwright.config.ts) (`baseURL`).
 - **Relatório HTML:** gerado em `test-output/playwright-report/` (configuração do reporter em `playwright.config.ts`). **JSON:** `test-output/playwright-report/results.json` — usado pelo Job Summary da CI (métricas e tabela de falhas). Artefatos de falha da API em `test-output/test-results/` (`outputDir`).
 - **Credenciais inválidas em `POST /auth`:** a Restful-Booker responde **HTTP 200** com `{"reason":"Bad credentials"}` em vez de **401** (RFC). O teste **exige status 401** e está em **`test.fixme`** para não bloquear o CI; o relatório Playwright mostra **fixme** e o bug continua documentado. Ver [docs/API_TESTS.md](docs/API_TESTS.md).
@@ -77,7 +78,7 @@ Pipeline que execute testes após commits, com visibilidade dos resultados.
   - **E2E:** lê `test-output/reports/cucumber-results.json` — tabela por feature/cenário; **Falhas (cenario, step e log)** para steps com `result.status == "failed"` (feature, cenário, texto do step, `error_message`). Bloco expansível com final do log.
   - **K6 (smoke):** trecho de métricas a partir da linha que contém `RESULTADO DO TESTE` no log; `<details>` com **log completo** da execução.
 - Os steps de teste **falham** o job se os testes falharem (gate real); Job Summary e uploads usam `if: always()` para publicar relatórios mesmo com falha.
-- **Artifacts:** baixáveis na aba **Actions** da execução (instruções no README, seção CI/CD).
+- **Artifacts:** disponíveis para download na aba **Actions** da execução (instruções no README, seção CI/CD).
 
 ---
 

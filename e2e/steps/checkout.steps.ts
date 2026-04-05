@@ -53,8 +53,8 @@ When('preencho os dados do cartao com numero invalido', async () => {
 });
 
 /**
- * Comportamento esperado: não confirmar pedido e exibir erro de pagamento.
- * No Automation Exercise o pedido costuma ser confirmado com cartão inválido — o cenário falha (bug visível na automação).
+ * Esperado: nao confirmar pedido e exibir erro de pagamento.
+ * No Automation Exercise o pedido costuma ser confirmado com cartao invalido — cenario falha (bug visivel na automacao).
  */
 Then('o pagamento com cartao invalido deve ser recusado com mensagem de erro', async () => {
   await expect(page.getByText(SUCCESS_TEXT)).not.toBeVisible({

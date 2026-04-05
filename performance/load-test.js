@@ -2,12 +2,12 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 
-// --- Env (__ENV). Defaults = cenario completo do desafio (500 VUs, platô 5m, test.k6.io). ---
+// --- Env (__ENV). Defaults = cenario completo do desafio (500 VUs, plato 5m, test.k6.io). ---
 // | Variavel            | Significado |
 // | K6_BASE_URL         | Origem HTTP |
-// | K6_TARGET_VUS / K6_VUS | VUs no platô (alias opcional) |
+// | K6_TARGET_VUS / K6_VUS | VUs no plato (alias opcional) |
 // | K6_RAMP_DURATION    | Ramp-up |
-// | K6_LOAD_DURATION    | Platô (duracao principal / "duration" do cenario) |
+// | K6_LOAD_DURATION    | Plato (duracao principal / "duration" do cenario) |
 // | K6_RAMP_DOWN_DURATION | Ramp-down |
 // | K6_SLEEP_S, K6_P95_MS, K6_HTTP_FAIL_RATE_MAX, K6_ERRORS_RATE_MAX | ver tabela na doc |
 // CI injeta K6_* via GitHub Variables (workflow). Sem --vus/--duration no npm: stages aplicam-se.

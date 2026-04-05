@@ -1,4 +1,6 @@
 import { test, expect, type APIResponse } from '@playwright/test';
+import { postAuthResponseSchema } from './schemas/auth';
+import { bookingRecordSchema } from './schemas/booking';
 
 /** Respostas com corpo JSON devem declarar Content-Type JSON (requisito por método). */
 function expectJsonContentType(response: APIResponse) {
@@ -30,7 +32,13 @@ test.describe('POST /auth', () => {
     expectJsonContentType(response);
 
     const body = await response.json();
-    expect(body.token).toBeDefined();
+
+    const parsed = postAuthResponseSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new Error(
+        `Contrato POST /auth inválido (Zod):\n${JSON.stringify(parsed.error.flatten(), null, 2)}`,
+      );
+    }
   });
 });
 
@@ -83,8 +91,16 @@ test.describe('GET /booking/{id}', () => {
     expectJsonContentType(response);
 
     const body = await response.json();
-    expect(body.firstname).toBe('Maria');
-    expect(body.lastname).toBe('Santos');
+
+    const parsed = bookingRecordSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new Error(
+        `Contrato GET /booking/{id} inválido (Zod):\n${JSON.stringify(parsed.error.flatten(), null, 2)}`,
+      );
+    }
+
+    expect(parsed.data.firstname).toBe('Maria');
+    expect(parsed.data.lastname).toBe('Santos');
   });
 });
 

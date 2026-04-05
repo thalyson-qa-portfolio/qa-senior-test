@@ -21,7 +21,7 @@ Este documento descreve a implementação dos testes automatizados de API para o
 |-----------|---------------|---------------|
 | Status codes | `expect(response.status()).toBe(...)` em cada fluxo | [booking.spec.ts](../tests/api/booking.spec.ts) |
 | Headers | `expectJsonContentType()` nos fluxos com corpo JSON; DELETE 201 aceita `application/json` ou `text/plain` | Helper + teste DELETE |
-| Corpo | `expect(body...)` após `response.json()` | Múltiplos testes |
+| Corpo | `expect(body...)` após `response.json()`; em **POST /auth** e **GET /booking/{id}** também validação de **schema** com **Zod** (`tests/api/schemas/`) | Múltiplos testes |
 | Testes positivos | 6 testes cobrindo GET, POST, PUT, DELETE | `booking.spec.ts` |
 | Testes negativos | 6 testes (auth, PUT sem token, payload, GET 404, DELETE sem id, **PATCH não suportado**) | `booking.spec.ts` |
 
@@ -51,10 +51,14 @@ Este documento descreve a implementação dos testes automatizados de API para o
 
 ---
 
-## Estrutura do Arquivo de Testes
+## Estrutura dos testes de API
 
 ```
-tests/api/booking.spec.ts
+tests/api/
+├── booking.spec.ts
+└── schemas/
+    ├── auth.ts       # Schema Zod: POST /auth
+    └── booking.ts    # Schema Zod: GET /booking/{id}
 ```
 
 ### Organização
@@ -62,6 +66,8 @@ tests/api/booking.spec.ts
 ```typescript
 // 1. Imports
 import { test, expect } from '@playwright/test';
+import { postAuthResponseSchema } from './schemas/auth';
+import { bookingRecordSchema } from './schemas/booking';
 
 // 2. Testes Positivos (agrupados por endpoint)
 test.describe('GET /booking', () => {...});
@@ -104,6 +110,19 @@ export default defineConfig({
 - `baseURL`: Evita repetir a URL completa em cada requisição
 - `extraHTTPHeaders`: Garante que a API retorne JSON
 - `reporter: 'html'`: Atende ao requisito de gerar relatório
+
+### Validação de contrato (Zod)
+
+Em dois endpoints principais o JSON de resposta é validado com **Zod** (`safeParse`), além dos asserts já existentes:
+
+| Endpoint | Schema | Arquivo |
+|----------|--------|----------|
+| `POST /auth` (200) | Objeto com `token` (string não vazia) | [`tests/api/schemas/auth.ts`](../tests/api/schemas/auth.ts) |
+| `GET /booking/{id}` (200) | Objeto reserva (`firstname`, `lastname`, `totalprice`, `depositpaid`, `bookingdates`, `additionalneeds`) | [`tests/api/schemas/booking.ts`](../tests/api/schemas/booking.ts) |
+
+Se o corpo não corresponder ao schema, o teste **falha com `Error`** cujo texto inclui `error.flatten()` do Zod (estrutura `fieldErrors` / `formErrors`), para facilitar **debug** no relatório Playwright ou no console.
+
+Não há helpers genéricos compartilhados: o fluxo é `safeParse` → se `success === false`, `throw new Error(...)` com o JSON do flatten.
 
 ---
 
@@ -179,18 +198,29 @@ expect(response.headers()['content-type']).toContain('application/json');
 
 #### Validar Body
 
+**Caso geral:** asserts diretos no objeto (lista, campos específicos):
+
 ```typescript
 const body = await response.json();
-expect(body.token).toBeDefined();
-expect(body.firstname).toBe('João');
 expect(Array.isArray(body)).toBe(true);
+expect(body.booking.firstname).toBe('João');
 ```
 
-| Método | Descrição |
-|--------|-----------|
-| `.toBeDefined()` | Existe (não é undefined) |
+**POST /auth** e **GET /booking/{id}:** além disso, contrato com **Zod** (`safeParse`); ver a seção [Validação de contrato (Zod)](#validação-de-contrato-zod) acima. Exemplo resumido:
+
+```typescript
+const body = await response.json();
+const parsed = postAuthResponseSchema.safeParse(body);
+if (!parsed.success) {
+  throw new Error(JSON.stringify(parsed.error.flatten(), null, 2));
+}
+```
+
+| Método / ferramenta | Descrição |
+|---------------------|-----------|
 | `.toBe('valor')` | Igual ao valor |
 | `Array.isArray()` | Verifica se é array |
+| **Zod** `safeParse` | Valida forma e tipos do JSON contra schema |
 
 ---
 
