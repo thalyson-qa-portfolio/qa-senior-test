@@ -205,13 +205,50 @@ jobs:
           name: k6-report
           path: _artifacts/k6
 
-      - name: Validate artifact contents
+      # Caminhos após download-artifact podem ser test-output/... ou só a pasta do relatório (comportamento do upload).
+      - name: Resolve artifact paths for Pages
         run: |
           set -e
-          test -f _artifacts/api/test-output/playwright-report/index.html || { echo "publish-github-pages: falta API index.html"; exit 1; }
-          test -f _artifacts/e2e/test-output/cucumber-html-report/index.html || { echo "publish-github-pages: falta E2E index.html"; exit 1; }
-          test -f _artifacts/k6/test-output/k6/k6-summary.json || { echo "publish-github-pages: falta k6-summary.json"; exit 1; }
-          echo "Validação dos artifacts OK."
+          WS="${{ github.workspace }}"
+          api=""
+          for d in "$WS/_artifacts/api/test-output/playwright-report" "$WS/_artifacts/api/playwright-report"; do
+            if [ -f "$d/index.html" ]; then api="$d"; break; fi
+          done
+          if [ -z "$api" ]; then
+            found=$(find "$WS/_artifacts/api" -type f -path '*/playwright-report/index.html' 2>/dev/null | head -1 || true)
+            if [ -n "$found" ]; then api=$(dirname "$found"); fi
+          fi
+          if [ -z "$api" ]; then
+            echo "publish-github-pages: falta API index.html. Ficheiros em _artifacts/api:"
+            find "$WS/_artifacts/api" -type f 2>/dev/null | head -120 || true
+            exit 1
+          fi
+          e2e=""
+          for d in "$WS/_artifacts/e2e/test-output/cucumber-html-report" "$WS/_artifacts/e2e/cucumber-html-report"; do
+            if [ -f "$d/index.html" ]; then e2e="$d"; break; fi
+          done
+          if [ -z "$e2e" ]; then
+            found=$(find "$WS/_artifacts/e2e" -type f -path '*/cucumber-html-report/index.html' 2>/dev/null | head -1 || true)
+            if [ -n "$found" ]; then e2e=$(dirname "$found"); fi
+          fi
+          if [ -z "$e2e" ]; then
+            echo "publish-github-pages: falta E2E index.html. Ficheiros em _artifacts/e2e:"
+            find "$WS/_artifacts/e2e" -type f 2>/dev/null | head -120 || true
+            exit 1
+          fi
+          k6ok=""
+          for f in "$WS/_artifacts/k6/test-output/k6/k6-summary.json" "$WS/_artifacts/k6/k6/k6-summary.json" "$WS/_artifacts/k6/k6-summary.json"; do
+            if [ -f "$f" ]; then k6ok=1; break; fi
+          done
+          if [ -z "$k6ok" ]; then
+            echo "publish-github-pages: falta k6-summary.json. Ficheiros em _artifacts/k6:"
+            find "$WS/_artifacts/k6" -type f 2>/dev/null | head -120 || true
+            exit 1
+          fi
+          echo "API_SRC=$api" >> "$GITHUB_ENV"
+          echo "E2E_SRC=$e2e" >> "$GITHUB_ENV"
+          echo "K6_ROOT=$WS/_artifacts/k6" >> "$GITHUB_ENV"
+          echo "Pages artifacts OK: API_SRC=$api E2E_SRC=$e2e"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -219,10 +256,6 @@ jobs:
           node-version: '20'
 
       - name: Assemble public site
-        env:
-          API_SRC: ${{ github.workspace }}/_artifacts/api/test-output/playwright-report
-          E2E_SRC: ${{ github.workspace }}/_artifacts/e2e/test-output/cucumber-html-report
-          K6_ROOT: ${{ github.workspace }}/_artifacts/k6
         run: node scripts/assemble-public-site.js
 
       - name: Upload Pages artifact

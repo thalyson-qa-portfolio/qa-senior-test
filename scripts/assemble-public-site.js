@@ -99,6 +99,18 @@ function generateRootIndex(publicDir) {
   fs.writeFileSync(path.join(publicDir, 'index.html'), html, 'utf8');
 }
 
+function resolveK6InnerDir(k6Root) {
+  const candidates = [
+    path.join(k6Root, 'test-output', 'k6'),
+    path.join(k6Root, 'k6'),
+    k6Root,
+  ];
+  for (const dir of candidates) {
+    if (fs.existsSync(path.join(dir, 'k6-summary.json'))) return dir;
+  }
+  die(`assemble-public-site: em falta k6-summary.json sob ${k6Root}.`);
+}
+
 function main() {
   const apiSrc = process.env.API_SRC;
   const e2eSrc = process.env.E2E_SRC;
@@ -115,9 +127,7 @@ function main() {
   if (!fs.existsSync(apiIndex)) die(`assemble-public-site: em falta ${apiIndex}`);
   if (!fs.existsSync(e2eIndex)) die(`assemble-public-site: em falta ${e2eIndex}`);
 
-  const k6Inner = path.join(k6Root, 'test-output', 'k6');
-  const summaryPath = path.join(k6Inner, 'k6-summary.json');
-  if (!fs.existsSync(summaryPath)) die(`assemble-public-site: em falta ${summaryPath}`);
+  const k6Inner = resolveK6InnerDir(k6Root);
 
   fs.rmSync(PUBLIC, { recursive: true, force: true });
   fs.mkdirSync(PUBLIC, { recursive: true });
