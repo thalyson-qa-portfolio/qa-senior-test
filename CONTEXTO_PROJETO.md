@@ -68,17 +68,18 @@ Pipeline que execute testes após commits, com visibilidade dos resultados.
 ### Como foi resolvido
 - **Workflow:** [.github/workflows/tests.yml](.github/workflows/tests.yml).
 - **Triggers:** push em qualquer branch; pull request para `main`.
-- **Três jobs em paralelo:**
-  1. **api-tests** — `npm ci`, `npm run test:api`, upload do artifact **api-report** (`test-output/playwright-report/`).
+- **Três jobs de teste em paralelo** (mais um job de publicação condicional; ver abaixo):
+  1. **api-tests** — `npm ci`, `npm run test:api`, upload do artifact **api-report** (`test-output/playwright-report/` e `test-output/test-results/`).
   2. **e2e-tests** — `npm ci`, Playwright Chromium, `npm run test:e2e:ci` (Cucumber sem `@known_issue` + dashboard) → artifact **e2e-report** só com `test-output/cucumber-html-report/` (o JSON em `reports/` fica no runner para o Job Summary, sem repetir no zip). Se a suíte falhar, artifact **e2e-failure-evidence** (traces, screenshots, videos).
   3. **performance-tests** — Node 20, `npm ci`, K6 (`grafana/setup-k6-action`), `env` com **Variables** `K6_*` (defaults de smoke no workflow se ausentes), `npm run test:perf:smoke:ci` (stages + JSON/summary em `test-output/k6/`) → artifact **k6-report** (`k6-output.txt` + `test-output/k6/`).
+  4. **publish-github-pages** — só em **push** na branch **`main`**, e **só se** `api-tests`, `e2e-tests` e `performance-tests` tiverem **sucesso**. Faz download dos três artifacts, valida ficheiros mínimos, executa **`scripts/assemble-public-site.js`** (gera **`public/`** no runner), publica no **GitHub Pages** (`actions/upload-pages-artifact` + `actions/deploy-pages`). Instruções e URL: [README.md](README.md) (secção CI/CD).
 - **Job Summary (painel da execução):** [.github/scripts/render-job-summary.sh](.github/scripts/render-job-summary.sh) escreve Markdown em `GITHUB_STEP_SUMMARY` (variável injetada pelo runner). O workflow grava o **exit code real** do comando de teste em `.job-exit-code`; o script usa isso para o badge (**Run: success** / falhou) e monta o conteúdo por tipo de suíte (`api`, `e2e`, `k6`).
   - **Métricas (API e E2E):** seção `### Metricas` com a **mesma** tabela: **Pass rate (%)** na primeira coluna, depois **Total**, **Passaram**, **Falharam**, **Duração** (na API, duração em ms a partir do `results.json` do Playwright; no E2E, texto de duração extraído do log do Cucumber quando existir, senão `n/d`).
   - **API:** lê `test-output/playwright-report/results.json` — após as métricas, tabela **Por grupo e teste**; seção **Falhas (cenario, esperado e encontrado)** para testes com falha (`ok: false`), com **esperado** e **encontrado** extraídos da mensagem de erro (ex.: `Expected: 401` / `Received: 200`). Bloco expansível com final do log da suíte.
   - **E2E:** lê `test-output/reports/cucumber-results.json` — tabela por feature/cenário; **Falhas (cenario, step e log)** para steps com `result.status == "failed"` (feature, cenário, texto do step, `error_message`). Bloco expansível com final do log.
   - **K6 (smoke):** trecho de métricas a partir da linha que contém `RESULTADO DO TESTE` no log; `<details>` com **log completo** da execução.
 - Os steps de teste **falham** o job se os testes falharem (gate real); Job Summary e uploads usam `if: always()` para publicar relatórios mesmo com falha.
-- **Artifacts:** disponíveis para download na aba **Actions** da execução (instruções no README, seção CI/CD).
+- **Artifacts:** disponíveis para download na aba **Actions** da execução (instruções no README, seção CI/CD). O site em **GitHub Pages** (quando configurado) reflete a última execução na **`main`** que publicou com sucesso — ver README.
 
 ---
 

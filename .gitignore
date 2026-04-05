@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env
 test-output/
+public/
 *.log
 performance/k6-results.json
 

@@ -309,6 +309,7 @@ O projeto inclui pipeline de integração contínua que executa automaticamente:
 | `api-tests` | Executa testes de API | ~1 min |
 | `e2e-tests` | E2E com Chromium (`test:e2e:ci` — sem `@known_issue`) | ~2-3 min |
 | `performance-tests` | K6 (`test:perf:smoke:ci`, stages via Variables; ~30s se sem vars no GitHub) + Node 20 / `npm ci` | ~1–2 min (smoke default) |
+| `publish-github-pages` | Monta `public/` e publica no GitHub Pages | Só em **push** na branch **`main`**, **após** `api-tests`, `e2e-tests` e `performance-tests` concluírem **com sucesso** |
 
 A carga completa (500 VUs, vários minutos) continua apenas localmente via `npm run test:perf`; o CI valida o script e o alvo com execução leve.
 
@@ -332,6 +333,17 @@ Após cada execução, os relatórios ficam disponíveis na aba **Actions** do G
 2. Clique na execução desejada
 3. Role até "Artifacts"
 4. Baixe o .zip do relatório
+
+### GitHub Pages (relatórios navegáveis)
+
+Em **push** para **`main`**, se os jobs `api-tests`, `e2e-tests` e `performance-tests` terminarem **com sucesso**, o job **`publish-github-pages`** valida os artifacts, executa `scripts/assemble-public-site.js` (pasta **`public/`** gerada só no CI, não versionada) e publica o site.
+
+- **Configuração única no repositório:** **Settings → Pages → Build and deployment → Source:** **GitHub Actions**.
+- **URL típica:** `https://<usuario-ou-org>.github.io/<nome-do-repositorio>/` (o GitHub mostra a URL exata em **Settings → Pages** e no resumo do job `publish-github-pages`).
+- **Conteúdo:** página índice com links para relatório **API (Playwright)**, **E2E (Cucumber)** e **Performance (K6)** a partir dos mesmos artifacts.
+- **O que o site representa:** a **última execução do workflow na `main` que publicou com sucesso** — ou seja, o conteúdo corresponde a essa run e **pode variar** entre execuções.
+
+Em PRs ou pushes noutras branches, os três jobs de teste podem correr, mas **não** há publicação no Pages.
 
 ---
 

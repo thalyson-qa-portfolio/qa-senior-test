@@ -170,3 +170,66 @@ jobs:
             test-output/k6/
           if-no-files-found: ignore
           retention-days: 30
+
+  publish-github-pages:
+    name: Publish GitHub Pages
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [api-tests, e2e-tests, performance-tests]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download API report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api-report
+          path: _artifacts/api
+
+      - name: Download E2E report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-report
+          path: _artifacts/e2e
+
+      - name: Download K6 report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: k6-report
+          path: _artifacts/k6
+
+      - name: Validate artifact contents
+        run: |
+          set -e
+          test -f _artifacts/api/test-output/playwright-report/index.html || { echo "publish-github-pages: falta API index.html"; exit 1; }
+          test -f _artifacts/e2e/test-output/cucumber-html-report/index.html || { echo "publish-github-pages: falta E2E index.html"; exit 1; }
+          test -f _artifacts/k6/test-output/k6/k6-summary.json || { echo "publish-github-pages: falta k6-summary.json"; exit 1; }
+          echo "Validação dos artifacts OK."
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Assemble public site
+        env:
+          API_SRC: ${{ github.workspace }}/_artifacts/api/test-output/playwright-report
+          E2E_SRC: ${{ github.workspace }}/_artifacts/e2e/test-output/cucumber-html-report
+          K6_ROOT: ${{ github.workspace }}/_artifacts/k6
+        run: node scripts/assemble-public-site.js
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
