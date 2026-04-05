@@ -211,7 +211,11 @@ jobs:
           set -e
           WS="${{ github.workspace }}"
           api=""
-          for d in "$WS/_artifacts/api/test-output/playwright-report" "$WS/_artifacts/api/playwright-report"; do
+          for d in \
+            "$WS/_artifacts/api/test-output/playwright-report" \
+            "$WS/_artifacts/api/playwright-report" \
+            "$WS/_artifacts/api"
+          do
             if [ -f "$d/index.html" ]; then api="$d"; break; fi
           done
           if [ -z "$api" ]; then
@@ -223,8 +227,13 @@ jobs:
             find "$WS/_artifacts/api" -type f 2>/dev/null | head -120 || true
             exit 1
           fi
+          # O download pode colocar index.html na raiz do artifact (conteúdo de cucumber-html-report/ sem prefixo).
           e2e=""
-          for d in "$WS/_artifacts/e2e/test-output/cucumber-html-report" "$WS/_artifacts/e2e/cucumber-html-report"; do
+          for d in \
+            "$WS/_artifacts/e2e/test-output/cucumber-html-report" \
+            "$WS/_artifacts/e2e/cucumber-html-report" \
+            "$WS/_artifacts/e2e"
+          do
             if [ -f "$d/index.html" ]; then e2e="$d"; break; fi
           done
           if [ -z "$e2e" ]; then
