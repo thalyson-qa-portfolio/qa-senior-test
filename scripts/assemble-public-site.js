@@ -48,12 +48,28 @@ function metricPick(metrics, names, field) {
   return null;
 }
 
+/**
+ * k6 pode serializar thresholds de duas formas:
+ * - Objeto `{ ok: boolean }`: ok === true → threshold passou; ok === false → falhou (doc Grafana).
+ * - Booleano: no resumo exportado costuma ser LastFailed — true = violou; false = OK
+ *   (ver discussão em grafana/k6#5316 e métrica Threshold.LastFailed no código do k6).
+ */
+function thresholdRuleFailed(val) {
+  if (val && typeof val === 'object' && Object.prototype.hasOwnProperty.call(val, 'ok')) {
+    return val.ok === false;
+  }
+  if (typeof val === 'boolean') {
+    return val === true;
+  }
+  return false;
+}
+
 function collectThresholdFailures(metrics) {
   const issues = [];
   for (const [name, data] of Object.entries(metrics || {})) {
     if (!data || typeof data !== 'object' || !data.thresholds) continue;
-    for (const [rule, ok] of Object.entries(data.thresholds)) {
-      if (ok === false) issues.push({ metric: name, rule });
+    for (const [rule, val] of Object.entries(data.thresholds)) {
+      if (thresholdRuleFailed(val)) issues.push({ metric: name, rule });
     }
   }
   return issues;
